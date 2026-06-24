@@ -8,6 +8,37 @@ import { Switch } from '../components/ui/switch';
 import { Plug, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
+// Helper function to handle integration toggle
+const handleToggleIntegration = (integrations, setIntegrations, id) => {
+  setIntegrations(integrations.map(int => {
+    if (int.id === id) {
+      const newStatus = !int.connected;
+      toast.success(`${int.name} ${newStatus ? 'conectado' : 'desconectado'}!`);
+      return { ...int, connected: newStatus };
+    }
+    return int;
+  }));
+};
+
+// Helper function to test connection
+const handleTestConnection = (name) => {
+  toast.info(`Testando conexão com ${name}...`);
+  setTimeout(() => {
+    toast.success('Conexão estabelecida com sucesso!');
+  }, 1500);
+};
+
+// Helper function to save Monday config
+const handleSaveMonday = (mondayApiKey, setShowMondayConfig, setMondayApiKey) => {
+  if (!mondayApiKey) {
+    toast.error('Por favor, insira a API key do Monday.com');
+    return;
+  }
+  toast.success('Configuração do Monday.com salva com sucesso!');
+  setShowMondayConfig(false);
+  setMondayApiKey('');
+};
+
 export default function Integrations() {
   const [integrations, setIntegrations] = useState([
     {
@@ -47,7 +78,9 @@ export default function Integrations() {
   const [mondayApiKey, setMondayApiKey] = useState('');
   const [showMondayConfig, setShowMondayConfig] = useState(false);
 
-  const toggleIntegration = (id) => {
+  const toggleIntegration = (id) => handleToggleIntegration(integrations, setIntegrations, id);
+  const testConnection = (name) => handleTestConnection(name);
+  const saveMonday = () => handleSaveMonday(mondayApiKey, setShowMondayConfig, setMondayApiKey);
     setIntegrations(integrations.map(int => {
       if (int.id === id) {
         const newStatus = !int.connected;

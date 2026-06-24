@@ -6,6 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Badge } from '../components/ui/badge';
 import { DollarSign, Target, Users, TrendingUp, Clock } from 'lucide-react';
 
+// Helper functions to avoid nested ternaries
+const getActivityBadgeVariant = (status) => {
+  if (status === 'success') return 'default';
+  if (status === 'warning') return 'warning';
+  return 'secondary';
+};
+
+const getActivityBadgeLabel = (status) => {
+  if (status === 'success') return 'Concluído';
+  if (status === 'warning') return 'Pendente';
+  return 'Info';
+};
+
 export default function Dashboard() {
   const recentActivities = [
     { id: 1, type: 'Proposta Gerada', description: 'Proposta #1523 criada por Agente SDR', time: '5 min atrás', status: 'success' },
@@ -75,8 +88,8 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="font-medium text-sm">{activity.type}</p>
-                    <Badge variant={activity.status === 'success' ? 'default' : activity.status === 'warning' ? 'warning' : 'secondary'}>
-                      {activity.status === 'success' ? 'Concluído' : activity.status === 'warning' ? 'Pendente' : 'Info'}
+                    <Badge variant={getActivityBadgeVariant(activity.status)}>
+                      {getActivityBadgeLabel(activity.status)}
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{activity.description}</p>
