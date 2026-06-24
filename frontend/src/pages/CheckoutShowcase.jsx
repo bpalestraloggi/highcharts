@@ -40,7 +40,7 @@ function ShowcaseContent() {
                         background: "hsl(var(--card))",
                         color: "hsl(var(--foreground))",
                         border: "1px solid hsl(var(--border))",
-                        fontFamily: "Manrope, sans-serif",
+                        fontFamily: "Hanken Grotesk, sans-serif",
                     },
                 }}
             />

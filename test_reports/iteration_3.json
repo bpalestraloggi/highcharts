@@ -1,0 +1,65 @@
+{
+  "summary": "Iteration 3 frontend testing — institutional fonts, OAB logo, and mobile responsiveness. 33/40 assertions passed. The OAB logo, mobile hamburger/drawer, mobile responsiveness, no-horizontal-overflow across viewports (360/390/768/1024/1440), and /proposta mobile layout are all working. CRITICAL FINDING: Newsreader font is NOT being applied to <h1>/<h2> elements at runtime — Tailwind's `font-serif` utility class is overriding the `@layer base` font-family rule. Newsreader is loaded by the browser but never used; headings render in the system ui-serif (Times-like) fallback instead.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Typography (global)",
+        "issue": "<h1>/<h2> computed font-family = 'ui-serif, Georgia, Cambria, \"Times New Roman\", Times, serif' — Newsreader is loaded (document.fonts shows Newsreader 200-800 'loaded') but NOT used. Root cause: Hero.jsx (and other components) apply Tailwind utility class `font-serif`, which lives in `@layer utilities` and overrides the `@layer base h1,h2,h3,.font-serif { font-family: \"Newsreader\"... }` rule in /app/frontend/src/index.css (Tailwind layer order: base < components < utilities). Canvas measureText confirms Newsreader vs ui-serif render at different widths (119px vs 105.7px @ 64px size), so Newsreader IS available — just not applied. Visual result: headings look like generic Times/Georgia instead of Newsreader Publico-Banner-style.",
+        "selector": "h1.font-serif, h2.font-serif, .font-serif",
+        "priority": "CRITICAL"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "All pages with headings",
+        "issues": [
+          "Because Newsreader is not actually applied, the institutional typography goal of iteration 3 is visually NOT achieved on headings (body Hanken Grotesk is correctly applied, but serif headings fall back to system Times/Georgia)."
+        ]
+      }
+    ]
+  },
+  "tests_executed": {
+    "body_font_Hanken_Grotesk": "PASS — computed body font-family includes 'Hanken Grotesk'; Hanken Grotesk 400/500/600/700 reported 'loaded' by document.fonts API.",
+    "h1_h2_font_Newsreader": "FAIL — Newsreader font face is loaded but H1/H2 computed font-family does not include Newsreader (Tailwind utility override).",
+    "no_Instrument_Serif_in_page": "PASS",
+    "no_Manrope_in_page": "FAIL (cosmetic only) — 'Manrope' string found inside /app/frontend/public/index.html line 45 in the 'Made with Emergent' badge inline style. Platform-controlled; not from dev's CSS. Recommend ignoring or note in report.",
+    "header_logo_home": "PASS — header-logo > oab-logo > <img src='/brand/oab-logo.png'>, HTTP 200.",
+    "header_logo_proposta": "PASS — same logo on /proposta header.",
+    "logo_count_home": "PASS — 3 oab-logo instances (header + hero floating receipt + footer).",
+    "credit_card_preview_logo": "NOT VERIFIED — payment-method-credit testid is only rendered after the user advances to step 2 (Pagamento) in the multi-step stepper, so it was not reachable from the initial page load. The PaymentStep code (line 50: data-testid=`payment-method-${method.id}`) does exist and PaymentStep was updated to use <OABLogo variant='mark'> per the spec; visual confirmation deferred. Main agent can self-verify by clicking through to step 2 or switching to Single-page flow.",
+    "mobile_390_hamburger_visible": "PASS",
+    "mobile_390_desktop_ctas_hidden": "PASS — header-cta-proposal, export-pdf, present-toggle all is_visible()=False at 390px.",
+    "mobile_390_hero_h1_fits": "PASS — H1 bounding box width=350 (< 390 viewport).",
+    "mobile_drawer_open": "PASS — clicking mobile-menu-toggle reveals mobile-menu with nav links (Diagnóstico/Checkout/Antes & Depois), 'Ver proposta executiva' CTA, PDF button, Apresentar button.",
+    "mobile_drawer_closes_on_navlink": "PASS",
+    "checkout_panels_no_overflow_390": "PASS — scrollWidth=innerWidth at 390 across pix/credit/boleto attempts (testids existed when stepper reached payment step in subsequent test).",
+    "proposta_mobile_h1_fits": "PASS — width=350.",
+    "horizontal_overflow_all_breakpoints": "PASS @ 360, 390, 768, 1024, 1440 (scrollWidth <= innerWidth + 2).",
+    "desktop_header_buttons_visible": "PASS — export-pdf, present-toggle, theme-toggle, header-cta-proposal all visible at 1440px."
+  },
+  "test_report_links": ["/app/test_reports/iteration_3.json"],
+  "action_items": [
+    "FIX TYPOGRAPHY OVERRIDE (CRITICAL): The Newsreader font is loaded but not applied to <h1>/<h2> because Tailwind's `font-serif` utility class (theme.fontFamily.serif default = ['ui-serif','Georgia',...]) wins over the `@layer base` override in /app/frontend/src/index.css. Recommended fix: extend Tailwind theme in /app/frontend/tailwind.config.js with `theme.extend.fontFamily.serif = ['Newsreader','Publico Banner','ui-serif','Georgia','serif']` so the `font-serif` utility itself maps to Newsreader. (Alternative: move the override into `@layer utilities` or add `!important` — but theme override is cleanest.) Same applies to `font-mono` if needed.",
+    "(Optional) Note that the only 'Manrope' string in the bundle comes from the platform-controlled 'Made with Emergent' badge in public/index.html — not a real failure of the spec but worth being aware of when grepping.",
+    "(Optional) Main agent should self-verify credit-card preview OAB logo visually by clicking through the stepper to step 2 (Pagamento) and selecting Cartão de crédito, or by switching to Single-page flow at desktop."
+  ],
+  "critical_code_review_comments": [
+    "Tailwind utility vs @layer base ordering trap: redefining `.font-serif` inside `@layer base` does NOT work — utilities always win. Either override `theme.fontFamily.serif` in tailwind.config.js, or scope the new font-family rules to `@layer utilities`. Same trap applies to any future attempt to redefine `.font-mono`.",
+    "Hero.jsx and several other components apply both an `<h1>` tag AND the `font-serif` Tailwind class. With the recommended theme.extend fix this becomes a no-op (both resolve to Newsreader), so no component changes are needed.",
+    "OABLogo 'chip' variant adds a -0.5 absolute accent bar at the bottom. This looks intentional but on very small chip sizes (size<24) the -bottom-0.5 underline can clip outside the parent's overflow:hidden containers — confirmed not an issue at size=40 used in header.",
+    "PageActionsHeader mobile drawer uses framer-motion height:auto animation which can briefly cause vertical layout shift on slower devices. Acceptable for a prototype."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only)", "frontend": "82.5% (33/40 assertions); core OAB-logo & mobile-responsive features 100%, typography goal not achieved on headings."},
+  "test_credentials": "none required",
+  "seed_data_creation": "none",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 3 testing focused on (1) Hanken Grotesk + Newsreader fonts, (2) /brand/oab-logo.png logo placement, (3) mobile-first responsive layout. Mobile responsiveness (390x844), hamburger menu, drawer, no-horizontal-overflow across 360/390/768/1024/1440, OAB logo image (/brand/oab-logo.png, HTTP 200, in header+hero+footer), and /proposta page mobile layout — ALL PASS. Body uses Hanken Grotesk correctly. CRITICAL: Newsreader font is downloaded by the browser but NOT applied to headings because Tailwind's `font-serif` utility class overrides the `@layer base` override. Fix is a one-liner in tailwind.config.js (theme.extend.fontFamily.serif). Credit-card preview logo (PaymentStep) was not directly verified because payment-method-* testids only mount after the user advances to step 2 of the stepper; code-review confirms <OABLogo variant='mark'> was wired in correctly per spec. After the font fix, recommend re-running just the typography section (h1/h2 computed style assertion) plus a quick spot-check of credit-card preview logo via Single-page flow.",
+  "rca of the issue": "Root cause for typography failure: In Tailwind v3, layer specificity is base < components < utilities. The custom CSS in /app/frontend/src/index.css redefines `h1, h2, h3, .font-serif { font-family: \"Newsreader\"... }` inside `@layer base`. The Hero.jsx <h1> uses Tailwind utility class `font-serif`, which Tailwind generates inside `@layer utilities` mapping to `theme.fontFamily.serif` default = ['ui-serif','Georgia','Cambria','\"Times New Roman\"','Times','serif']. Utility wins. Verification: window.getComputedStyle(h1).fontFamily === 'ui-serif, Georgia, Cambria, \"Times New Roman\", Times, serif'; document.fonts has Newsreader entries with status='loaded'; canvas.measureText('Test') @64px = 119px in Newsreader vs 105.7px in ui-serif (proves Newsreader IS available but unused). Mitigation: Add `theme.extend.fontFamily.serif = ['Newsreader','Publico Banner','ui-serif','Georgia','\"Times New Roman\"','serif']` in /app/frontend/tailwind.config.js. After restart of frontend (yarn / hot reload), the `font-serif` utility itself will map to Newsreader and all <h1>/<h2>.font-serif elements will render correctly."
+}

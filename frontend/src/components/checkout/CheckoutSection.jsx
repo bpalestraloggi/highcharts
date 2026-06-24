@@ -59,10 +59,10 @@ function FlowToggle() {
 function MultiStepFlow() {
     const { step, goNext, goBack, completePurchase, completed } = useCheckout();
     return (
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-14">
             <div className="lg:col-span-8">
                 <Stepper />
-                <div className="glass-card rounded-2xl p-7 sm:p-10">
+                <div className="glass-card rounded-2xl p-5 sm:p-7 lg:p-10">
                     <AnimatePresence mode="wait">
                         {step === 0 && (
                             <IdentificationStep
@@ -91,9 +91,9 @@ function MultiStepFlow() {
 function SinglePageFlow() {
     const { completePurchase, completed } = useCheckout();
     return (
-        <div className="grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-14">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-14">
             <div className="lg:col-span-8 space-y-10">
-                <div className="glass-card rounded-2xl p-7 sm:p-10">
+                <div className="glass-card rounded-2xl p-5 sm:p-7 lg:p-10">
                     <AnimatePresence mode="wait">
                         {!completed ? (
                             <motion.div
@@ -128,14 +128,14 @@ export default function CheckoutSection() {
             id="checkout"
             className="relative border-t border-border/60 bg-background"
         >
-            <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
+            <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
                 <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
                     <div>
                         <div className="pill-tag">
                             <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                             Protótipo interativo
                         </div>
-                        <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                        <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                             Experimente os dois fluxos
                         </h2>
                         <p className="mt-3 max-w-lg text-sm text-muted-foreground">
@@ -147,7 +147,7 @@ export default function CheckoutSection() {
                     <FlowToggle />
                 </div>
 
-                <div className="mt-12">
+                <div className="mt-10 sm:mt-12">
                     <AnimatePresence mode="wait">
                         <motion.div
                             key={flowMode}

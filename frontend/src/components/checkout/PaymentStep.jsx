@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Slider } from "@/components/ui/slider";
+import OABLogo from "./OABLogo";
 import {
     BANKS,
     BOLETO_LINE,
@@ -192,8 +193,8 @@ function PixPanel() {
             </div>
             <div className="lg:col-span-3">
                 <div className="overline mb-3">PIX Copia e cola</div>
-                <div className="rounded-xl border border-border bg-card/60 p-5">
-                    <div className="font-mono text-[11px] leading-relaxed break-all text-muted-foreground">
+                <div className="rounded-xl border border-border bg-card/60 p-4 sm:p-5">
+                    <div className="font-mono text-[10px] leading-relaxed break-all text-muted-foreground sm:text-[11px]">
                         {PIX_PAYLOAD}
                     </div>
                     <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -278,9 +279,7 @@ function CardForm({ debit = false }) {
                     />
                     <div className="relative flex h-full flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="font-serif text-xl tracking-tight">
-                                OAB·SP
-                            </span>
+                            <OABLogo size={34} variant="mark" />
                             <span className="text-[10px] uppercase tracking-[0.22em] opacity-80">
                                 {debit ? "Débito" : "Crédito"}
                             </span>
@@ -438,8 +437,8 @@ function BoletoPanel() {
             transition={{ duration: 0.35 }}
             className="space-y-6"
         >
-            <div className="glass-card rounded-2xl p-7">
-                <div className="flex items-start justify-between">
+            <div className="glass-card rounded-2xl p-5 sm:p-7">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
                     <div>
                         <div className="overline">Boleto bancário</div>
                         <div className="mt-2 font-serif text-2xl tracking-tight">
@@ -450,9 +449,9 @@ function BoletoPanel() {
                             úteis
                         </div>
                     </div>
-                    <div className="rounded-md bg-secondary p-3">
+                    <div className="rounded-md bg-secondary p-3 max-w-full">
                         {/* Faux barcode */}
-                        <div className="flex h-12 items-center gap-[2px]">
+                        <div className="flex h-12 items-center gap-[2px] overflow-hidden">
                             {Array.from({ length: 48 }).map((_, i) => (
                                 <span
                                     key={i}
@@ -468,7 +467,7 @@ function BoletoPanel() {
                     </div>
                 </div>
 
-                <div className="mt-6 rounded-md bg-secondary/70 px-4 py-3 font-mono text-sm tracking-wider">
+                <div className="mt-6 rounded-md bg-secondary/70 px-4 py-3 font-mono text-xs leading-relaxed sm:text-sm sm:tracking-wider break-all">
                     {BOLETO_LINE}
                 </div>
                 <div className="mt-4 flex flex-wrap gap-3">

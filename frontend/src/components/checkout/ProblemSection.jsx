@@ -43,14 +43,14 @@ export default function ProblemSection({ onJumpToCheckout }) {
             id="problem"
             className="relative border-t border-border/60 bg-background"
         >
-            <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
-                <div className="grid grid-cols-1 gap-14 lg:grid-cols-12">
+            <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
+                <div className="grid grid-cols-1 gap-10 sm:gap-14 lg:grid-cols-12">
                     <div className="lg:col-span-5">
                         <div className="pill-tag">
                             <AlertTriangle className="h-3 w-3 text-accent" />
                             Diagnóstico do checkout atual
                         </div>
-                        <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                        <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                             O que está
                             <br />
                             <span className="italic text-accent">freando</span>{" "}

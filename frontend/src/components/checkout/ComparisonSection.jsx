@@ -14,7 +14,7 @@ const AFTER = [
     "Fluxo unificado em 3 passos",
     "Resumo sempre visível",
     "Selos · TLS · LGPD · gateway",
-    "Instrument Serif + Manrope",
+    "Newsreader + Hanken Grotesk",
     "Dark mode institucional",
     "Comprovante PDF assinado",
 ];
@@ -25,13 +25,13 @@ export default function ComparisonSection({ onCta }) {
             id="comparison"
             className="relative border-t border-border/60 bg-background"
         >
-            <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
+            <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
                 <div className="max-w-2xl">
                     <div className="pill-tag">
                         <MousePointerClick className="h-3 w-3 text-accent" />
                         Antes & Depois
                     </div>
-                    <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                    <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                         Mesma instituição.
                         <br />
                         <span className="italic">Outra experiência.</span>

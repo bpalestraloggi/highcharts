@@ -152,7 +152,7 @@ function ProposalContent() {
                 id="proposta-hero"
                 className="relative isolate min-h-[80vh] overflow-hidden border-b border-border/60"
             >
-                <div className="mx-auto grid max-w-7xl grid-cols-1 gap-12 px-6 pb-24 pt-20 sm:px-8 sm:pt-28 lg:grid-cols-12 lg:px-12 lg:pt-36">
+                <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 px-5 pb-16 pt-12 sm:gap-12 sm:px-8 sm:pb-24 sm:pt-20 lg:grid-cols-12 lg:px-12 lg:pt-36">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -160,7 +160,7 @@ function ProposalContent() {
                         className="lg:col-span-7"
                     >
                         <Pill icon={Sparkles}>Proposta executiva · Documento confidencial</Pill>
-                        <h1 className="mt-8 font-serif text-[3rem] leading-[1.02] tracking-tight sm:text-6xl lg:text-[5rem]">
+                        <h1 className="mt-6 font-serif text-[2.25rem] leading-[1.05] tracking-tight sm:mt-8 sm:text-6xl lg:text-[5rem]">
                             Da fila do boleto
                             <br />
                             à <span className="italic text-accent">primeira</span> instituição
@@ -224,10 +224,10 @@ function ProposalContent() {
 
             {/* ROI */}
             <section id="roi" className="border-b border-border/60">
-                <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
+                <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
                     <div className="max-w-2xl">
                         <Pill icon={LineChart}>Retorno projetado</Pill>
-                        <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                        <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                             R$ 34M recuperados
                             <br />
                             <span className="italic">só no primeiro ano.</span>
@@ -255,7 +255,7 @@ function ProposalContent() {
                                 ].join(" ")}
                             >
                                 <div className="overline">{m.label}</div>
-                                <div className="num-display mt-4 text-5xl">{m.value}</div>
+                                <div className="num-display mt-3 text-4xl sm:mt-4 sm:text-5xl">{m.value}</div>
                                 <div className="mt-2 text-xs text-muted-foreground">
                                     {m.sub}
                                 </div>
@@ -282,10 +282,10 @@ function ProposalContent() {
 
             {/* Market benchmark */}
             <section id="market" className="border-b border-border/60">
-                <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
+                <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
                     <div className="max-w-2xl">
                         <Pill icon={Target}>Benchmark</Pill>
-                        <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                        <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                             O melhor de cada
                             <br />
                             referência <span className="italic">global</span>.
@@ -336,10 +336,10 @@ function ProposalContent() {
 
             {/* Timeline */}
             <section id="timeline" className="border-b border-border/60">
-                <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
+                <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
                     <div className="max-w-2xl">
                         <Pill icon={Layers}>Cronograma</Pill>
-                        <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                        <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                             12 semanas
                             <br />
                             do <span className="italic">kickoff ao rollout</span>.
@@ -391,11 +391,11 @@ function ProposalContent() {
 
             {/* Investment */}
             <section id="investment" className="border-b border-border/60">
-                <div className="mx-auto max-w-7xl px-6 py-20 sm:px-8 sm:py-28 lg:px-12">
+                <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-20 lg:px-12 lg:py-28">
                     <div className="grid grid-cols-1 gap-12 lg:grid-cols-12">
                         <div className="lg:col-span-5">
                             <Pill icon={Banknote}>Investimento</Pill>
-                            <h2 className="mt-6 font-serif text-4xl tracking-tight sm:text-5xl">
+                            <h2 className="mt-5 font-serif text-3xl tracking-tight sm:mt-6 sm:text-4xl lg:text-5xl">
                                 R$ 480.000
                                 <br />
                                 <span className="italic text-muted-foreground text-3xl">
@@ -467,9 +467,9 @@ function ProposalContent() {
 
             {/* CTA */}
             <section id="cta" className="border-b border-border/60">
-                <div className="mx-auto max-w-5xl px-6 py-24 text-center sm:px-8 sm:py-32 lg:px-12">
+                <div className="mx-auto max-w-5xl px-5 py-16 text-center sm:px-8 sm:py-24 lg:px-12 lg:py-32">
                     <Pill icon={Sparkles}>Próximos passos</Pill>
-                    <h2 className="mt-6 font-serif text-5xl tracking-tight sm:text-6xl">
+                    <h2 className="mt-5 font-serif text-4xl tracking-tight sm:mt-6 sm:text-5xl lg:text-6xl">
                         Pronto para
                         <br />
                         <span className="italic text-accent">começar.</span>
@@ -508,7 +508,7 @@ function ProposalContent() {
                         background: "hsl(var(--card))",
                         color: "hsl(var(--foreground))",
                         border: "1px solid hsl(var(--border))",
-                        fontFamily: "Manrope, sans-serif",
+                        fontFamily: "Hanken Grotesk, sans-serif",
                     },
                 }}
             />
