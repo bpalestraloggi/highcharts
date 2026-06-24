@@ -3,95 +3,107 @@
 ## Original Problem Statement
 > "estou negociando com a OAB e preciso melhorar o checkout de pagamento deles.. Tirei print de algumas telas e preciso me me ideias e dicas de sites incriveis para tornar o checkout de pgto perfeito"
 
-**Goal:** Build a high-fidelity, interactive prototype to be presented to the OAB-SP board, showcasing a redesign of the Anuidade 2026 payment checkout that elevates UX, trust signals, and conversion — fintech-grade quality.
+**Goal:** Build a high-fidelity, interactive prototype to be presented to the OAB-SP board, showcasing a redesign of the Anuidade 2026 payment checkout — fintech-grade UX with measurable ROI.
 
 ## User Choices
-- Delivery format: **High-fidelity interactive prototype**
-- Payment methods: **PIX, Credit Card (with installments), Debit Card, Boleto, Débito em conta, Apple Pay / Google Pay**
-- Visual style: **Keep OAB identity (institutional blue + red) but modernize with premium typography and micro-interactions**
-- Flow: **BOTH single-page AND multi-step (toggleable)**
-- Extra features: PIX 1-click copy + QR Code, installment simulator, dark mode, security badges, downloadable PDF receipt, success animations, pre-filled lawyer data
+- Delivery: **Protótipo interativo de alta fidelidade**
+- Métodos: **PIX, Crédito (com parcelamento), Débito, Boleto, Débito em conta, Apple/Google Pay**
+- Visual: **Identidade OAB (azul institucional + vermelho)** modernizada com tipografia premium e micro-interações
+- Fluxo: **single-page E multi-step** (toggleável)
+- Extras: PIX 1-click + QR, simulador de parcelas, dark mode, badges de segurança, comprovante PDF, animações de sucesso, dados pré-preenchidos
+- **Iteração 2 — Materiais para apresentação à diretoria:**
+  - Página `/proposta` (deck executivo com ROI, benchmark, cronograma, investimento)
+  - Modo apresentação (deck com navegação por teclado)
+  - Exportar PDF da página (1 clique)
+  - QR Code no hero (diretoria escaneia no celular)
 
 ## Architecture & Stack
-- **Frontend:** React 19 + react-router-dom v7, TailwindCSS 3.4, Framer Motion, lucide-react, shadcn/ui primitives
-- **No backend used** — pure client-side prototype with mocked data
-- **Libraries added:** `qrcode.react`, `jspdf`, `canvas-confetti`
-- **Fonts:** Instrument Serif (headings) + Manrope (body) + JetBrains Mono (code), loaded via Google Fonts
-- **Design system:** CSS variables in `index.css` with full light + dark themes (OAB Navy `#0A2540` primary, OAB Red `#C8102E` accent)
+- React 19 · react-router-dom v7 · Tailwind 3.4 · Framer Motion · shadcn/ui · lucide-react
+- Frontend-only — sem backend, dados mocados
+- Bibliotecas: `qrcode.react`, `jspdf`, `html2canvas`, `canvas-confetti`
+- Fontes: Instrument Serif (display) + Manrope (texto) + JetBrains Mono (mono)
+- Design tokens em `index.css` (OAB Navy `#0A2540`, OAB Red `#C8102E`), light + dark mode
 
 ## File Structure
 ```
 /app/frontend/src/
-├── App.js                                # Router → CheckoutShowcase
-├── index.css                             # Design tokens, OAB palette, grain, animations
+├── App.js                                # Routes: / e /proposta
+├── index.css                             # Design tokens + grain + animations
 ├── pages/
-│   └── CheckoutShowcase.jsx              # Top-level page composition
+│   ├── CheckoutShowcase.jsx              # Página principal (/) com PresentationProvider
+│   └── ProposalPage.jsx                  # Deck executivo (/proposta)
 ├── contexts/
-│   └── CheckoutContext.jsx               # flowMode, step, paymentMethod, parcelas, completePurchase, reset
+│   ├── CheckoutContext.jsx               # Estado do checkout
+│   └── PresentationContext.jsx           # Modo apresentação + teclado
 ├── lib/
-│   └── checkout-data.js                  # Mock lawyer/anuidade/PIX/Boleto data + formatters + maskers
+│   ├── checkout-data.js                  # Mocks + formatters
+│   └── export-pdf.js                     # html2canvas + jsPDF multi-page
 └── components/checkout/
-    ├── Header.jsx                        # sticky header + theme-toggle + nav
-    ├── Hero.jsx                          # Hero with floating receipt card
-    ├── ProblemSection.jsx                # 6 pain-point cards + "what we deliver" win card
-    ├── CheckoutSection.jsx               # flow-toggle + MultiStepFlow + SinglePageFlow
-    ├── Stepper.jsx                       # 3-step progress indicator
-    ├── IdentificationStep.jsx            # pre-filled lawyer card + billing fields
-    ├── PaymentStep.jsx                   # PIX / CardForm / Boleto / BankDebit / Wallet panels + installment slider
-    ├── OrderSummary.jsx                  # sticky glass-card with discount toggle + trust signals
-    ├── SuccessScreen.jsx                 # confetti + receipt card + jsPDF download
-    ├── ComparisonSection.jsx             # Before vs After mock UIs
+    ├── PageActionsHeader.jsx             # Header compartilhado (PDF, Apresentar, Tema, Proposta)
+    ├── Hero.jsx                          # Hero (com QR card)
+    ├── HeroQRCard.jsx                    # QR Code do protótipo
+    ├── ProblemSection.jsx                # Diagnóstico
+    ├── CheckoutSection.jsx               # Flow toggle + Multi/Single
+    ├── Stepper.jsx
+    ├── IdentificationStep.jsx
+    ├── PaymentStep.jsx                   # PIX, Card, Boleto, BankDebit, Wallet
+    ├── OrderSummary.jsx
+    ├── SuccessScreen.jsx                 # Confetti + PDF comprovante
+    ├── ComparisonSection.jsx
+    ├── PresentationControls.jsx          # Floating dock com prev/next/dots/exit
     └── Footer.jsx
 ```
 
 ## Personas
-1. **Diretoria OAB-SP** — the buyer. Needs to see institutional polish + measurable improvements.
-2. **Advogado(a) inscrito(a)** — end user. Needs a fast, trustworthy, mobile-friendly payment flow.
+1. **Diretoria OAB-SP** — buyer. Precisa ver polimento institucional + ROI mensurável.
+2. **Advogado(a) inscrito(a)** — end user. Precisa de checkout rápido e confiável.
 
 ## Core Requirements (static)
-- Keep OAB institutional identity (navy + red) — never compromise the brand.
-- Always show: order summary, security badges, gateway certification.
-- Support all 6 payment methods with their idiomatic UX (PIX = QR + copy; Card = installments; Boleto = barcode; etc.).
-- Always pre-fill lawyer data (mocked) — never re-ask.
-- Dark mode must be first-class.
-- Receipt PDF must look institutional (OAB-branded, signed, with confirmation code).
+- Manter identidade OAB (navy + red) sem comprometer a marca
+- Resumo do pedido + badges de segurança sempre visíveis
+- Suportar 6 métodos de pagamento com UX idiomática
+- Pré-preencher dados do advogado (mock)
+- Dark mode first-class
+- Comprovante PDF institucional (jsPDF)
+- Materiais de venda: deck executivo + apresentação + export + QR
 
-## What's Been Implemented (2026-01)
-- ✅ Hero with Instrument Serif headline + animated floating receipt card
-- ✅ Diagnostic section with 6 pain-point cards from screenshots analysis
-- ✅ Flow toggle: Multi-step (3 steps) ⇄ Single-page (one card)
-- ✅ Identificação step with pre-filled lawyer card (Dr. Ricardo Almeida Souza · OAB/SP 123.456)
-- ✅ Payment step with all 6 methods + interactive panels
-  - PIX: QR Code (qrcode.react) + Copia-e-cola with copy buttons + 15-min countdown
-  - Cartão de Crédito: live card preview + Radix slider 1-12× with juros calculation
-  - Cartão de Débito: card form variant
-  - Boleto: barcode mock + linha digitável copy + PDF download
-  - Débito em conta: 6 bank selector (Itaú, BB, Bradesco, Santander, Caixa, Nubank)
-  - Apple Pay / Google Pay: native-style wallet button
-- ✅ Sticky Order Summary with live discount toggle (R$ 909,04 ↔ R$ 1.010,05) + trust signals
-- ✅ Success screen: confetti burst + animated SVG checkmark + receipt card + jsPDF download + email/share buttons + restart
-- ✅ Comparison section: Before (legacy .aspx mock) vs After (proposal mock)
-- ✅ Dark mode toggle with deep-navy palette
-- ✅ Full responsive (tested at 1920×800 and 390×844)
-- ✅ Sonner toast notifications
-- ✅ Premium typography (Instrument Serif + Manrope), subtle grain overlay, glass-morphism
+## What's Been Implemented
+
+### 2026-01 — Iteração 1 (protótipo base)
+- ✅ Hero, Diagnóstico, Checkout (Multi/Single), Antes & Depois
+- ✅ 6 métodos de pagamento (PIX QR + copy, Card + slider parcelas, Débito, Boleto, Banco, Wallets)
+- ✅ Order Summary sticky com toggle de desconto
+- ✅ Success screen (confetti + jsPDF receipt + restart)
+- ✅ Dark mode + Sonner toasts + responsivo
+- ✅ Testing agent iteration_1: 18/18 PASS (100%)
+
+### 2026-01 — Iteração 2 (materiais para apresentação)
+- ✅ **/proposta** — Deck executivo (6 seções): Hero, ROI, Benchmark (Stripe/Mercado Pago/Nubank/Apple Pay), Cronograma (4 fases · 12 semanas), Investimento (R$ 480k em 4 marcos), CTA
+- ✅ **Modo apresentação** — toggle no header, navegação por ←/→/Espaço/PageUp/Down/Home/End/Esc, dock flutuante com dots/contador/prev/next/exit. Tracking de scroll com supressão durante navegação programática.
+- ✅ **Exportar PDF** — `lib/export-pdf.js` usa html2canvas + jsPDF, gera PDF A4 multi-página, esconde badges/controles durante captura, força light mode e restaura, com toasts de progresso.
+- ✅ **QR Code no Hero** — `HeroQRCard.jsx` com QR dinâmico (window.location.origin) + botão copiar link.
+- ✅ PageActionsHeader compartilhado entre / e /proposta (PDF · Apresentar · Tema · Ver proposta/Protótipo · nav contextual)
+- ✅ Testing agent iteration_2: 16/16 PASS (100%)
 
 ## Testing
-- Testing agent ran 18 frontend E2E tests via Playwright → **100% pass** (`/app/test_reports/iteration_1.json`)
-- All payment flows, copy buttons, slider, theme toggle, PDF download, confetti, single ↔ multi flow toggle verified
-
-## Backlog / Future Enhancements (P1/P2)
-- **P1** — Wire real payment gateway (e.g., Pagar.me / Cielo / Stone) when OAB approves
-- **P1** — Persist BankDebit / Wallet / Card selections in CheckoutContext so they appear in the success comprovante
-- **P2** — Add WhatsApp share for the receipt + "Adicionar ao Apple/Google Wallet" for the confirmation pass
-- **P2** — A/B test variant: "default discount applied" vs "default no-discount with celebration on toggle"
-- **P2** — Replace mock OAB seal in PDF with the official institutional SVG once received
-- **P2** — Add "Lembrar-me da próxima anuidade" opt-in for email automation
-
-## Next Tasks
-1. Awaiting OAB-SP feedback after presentation
-2. Add real backend wiring once contract signed (FastAPI + payment gateway)
-3. Implement an admin dashboard for OAB to monitor conversion / abandonment
+- `/app/test_reports/iteration_1.json` — checkout E2E (18 testes)
+- `/app/test_reports/iteration_2.json` — proposta + apresentação + PDF + QR (16 testes)
 
 ## URLs
 - Preview: https://oab-checkout.preview.emergentagent.com
+- Production: https://oab-checkout.emergent.host
+
+## Backlog / Future Enhancements
+- **P1** Integrar gateway real (Pagar.me / Cielo / Stone) com backend FastAPI quando aprovado
+- **P1** Persistir seleção de banco/wallet no contexto (hoje é state local da PaymentStep)
+- **P2** Adicionar `Adicionar à Carteira Apple/Google` para o comprovante
+- **P2** A/B test: desconto aplicado por padrão vs celebração ao ativar
+- **P2** Substituir mock do selo OAB no PDF por SVG institucional oficial
+- **P2** Permitir QR Code apontar para a rota atual (`pathname`) ao invés de sempre `/`
+- **P2** Anuncar via aria-live na troca de slide do modo apresentação (acessibilidade)
+- **P2** Dashboard admin OAB com métricas de conversão e abandono
+
+## Next Tasks
+1. Apresentar à diretoria com `/proposta` + modo apresentação
+2. Coletar feedback e ajustar copy/números do ROI
+3. Após aprovação: backend FastAPI + integração gateway + selo SVG oficial

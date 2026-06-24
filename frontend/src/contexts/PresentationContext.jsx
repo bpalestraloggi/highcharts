@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 const PresentationContext = createContext(null);
 
@@ -8,10 +8,13 @@ export function PresentationProvider({ sections, children }) {
 
     const total = sections.length;
 
+    const suppressScrollUntilRef = useRef(0);
+
     const goTo = useCallback(
         (i) => {
             const clamped = Math.max(0, Math.min(total - 1, i));
             setIndex(clamped);
+            suppressScrollUntilRef.current = Date.now() + 900;
             const target = sections[clamped];
             if (target?.id) {
                 const el = document.getElementById(target.id);
@@ -22,7 +25,7 @@ export function PresentationProvider({ sections, children }) {
                 window.location.href = target.href;
             }
         },
-        [sections, total]
+        [sections, total, suppressScrollUntilRef]
     );
 
     const next = useCallback(() => goTo(index + 1), [goTo, index]);
@@ -33,6 +36,7 @@ export function PresentationProvider({ sections, children }) {
             const willActivate = !a;
             if (willActivate) {
                 setIndex(0);
+                suppressScrollUntilRef.current = Date.now() + 900;
                 setTimeout(() => {
                     const first = sections[0];
                     if (first?.id) {
@@ -44,12 +48,13 @@ export function PresentationProvider({ sections, children }) {
             }
             return willActivate;
         });
-    }, [sections]);
+    }, [sections, suppressScrollUntilRef]);
 
     // Track scroll position to update current index
     useEffect(() => {
         if (!active) return;
         const onScroll = () => {
+            if (Date.now() < suppressScrollUntilRef.current) return;
             const middle = window.scrollY + window.innerHeight / 3;
             let current = 0;
             sections.forEach((s, i) => {
@@ -61,7 +66,7 @@ export function PresentationProvider({ sections, children }) {
         onScroll();
         window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
-    }, [active, sections]);
+    }, [active, sections, suppressScrollUntilRef]);
 
     // Keyboard navigation
     useEffect(() => {
