@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { ArrowRight, ShieldCheck, Zap, FileBadge2 } from "lucide-react";
+import HeroQRCard from "./HeroQRCard";
 
 const stat = [
     { value: "287K", label: "Advogados ativos OAB/SP" },
@@ -69,6 +70,8 @@ export default function Hero({ onCta }) {
                                 </div>
                             ))}
                         </div>
+
+                        <HeroQRCard />
                     </motion.div>
 
                     {/* Visual card */}

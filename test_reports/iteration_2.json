@@ -1,0 +1,45 @@
+{
+  "summary": "Frontend E2E testing of iteration 2 — 4 new features: /proposta executive page, presentation mode, one-click PDF export, hero QR code. All 4 new features pass end-to-end. No critical or minor issues. Previous checkout flow regression spot-check also passed (header replaced with PageActionsHeader, hero now includes HeroQRCard at the bottom of the left column).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "tests_executed": {
+    "home_header_testids": "PASS — export-pdf, present-toggle, theme-toggle, header-cta-proposal, nav-proposal all visible",
+    "hero_qr_card": "PASS — hero-qr-card present with 3 SVGs (incl. QR), text 'Escaneie e navegue no celular', hero-qr-copy visible",
+    "hero_qr_copy": "PASS — clipboard contained 'https://oab-checkout.preview.emergentagent.com/', toast 'Link copiado' shown",
+    "nav_to_proposta_from_header_cta": "PASS — header-cta-proposal navigates to /proposta",
+    "proposta_hero_content": "PASS — H1 contains 'Da fila do boleto'; executive summary card shows R$ 480.000, 12 semanas, R$ 34M, 70× em 12 meses, 6 profissionais sênior, 3 meses pós-lançamento",
+    "proposta_sections": "PASS — all 6 sections present: #proposta-hero, #roi, #market, #timeline, #investment, #cta",
+    "proposta_anchor_nav": "PASS — clicking #timeline anchor scrolled to y=2794",
+    "proposta_roi_content": "PASS — 62%, 74%, R$ 34M, −68%, −45%, +38pts, 287K inscritos, +12pp adimplência, −3min por pagamento all rendered",
+    "proposta_benchmark_content": "PASS — Stripe, Mercado Pago, Nubank, Apple Pay cards all rendered with tags",
+    "proposta_investment_content": "PASS — 20%/30%/25%/25% milestones rendered",
+    "proposta_cta_testids": "PASS — cta-email, cta-back-to-prototype, back-to-prototype all present",
+    "presentation_mode_home": "PASS — 4 dots, counter '01 / 04', toggle text 'Sair', arrow nav works, exit hides controls and restores 'Apresentar'",
+    "presentation_mode_proposta": "PASS — 6 dots, counter '01 / 06', dot click + next button advance counter (verified 01→02→03→06)",
+    "presentation_keyboard": "PASS — ArrowRight, ArrowLeft, Escape all work (Escape exits)",
+    "pdf_export_proposta": "PASS — download started with filename 'oab-sp-proposta-executiva.pdf'; loading toast 'Gerando PDF' shown; success toast 'PDF gerado com sucesso' shown",
+    "theme_toggle": "PASS — toggles 'dark' class on documentElement on both / and /proposta",
+    "back_to_prototype_navigation": "PASS — cta-back-to-prototype returns to /"
+  },
+  "test_report_links": ["/app/test_reports/iteration_2.json"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "PresentationContext scroll handler can briefly set index back to the previous slide during in-flight smooth scroll, causing the counter to lag by ~1-2s before catching up. Counter eventually reaches the correct value; UX-wise consider suppressing the scroll-handler updates for ~600ms after a programmatic goTo() to avoid flicker.",
+    "HeroQRCard hardcodes window.location.origin + '/' — fine for current single-route prototype, but if /proposta were ever shared via QR the user would always be sent back to /. Consider using current pathname or accepting a 'url' prop.",
+    "PageActionsHeader hides export-pdf and present-toggle via 'sm:inline-flex' (hidden < sm). This is intentional per spec but means mobile users coming via QR code will not see PDF export — confirmed not a bug, just a note."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "n/a (frontend-only request)", "frontend": "100%"},
+  "test_credentials": "none required",
+  "seed_data_creation": "none",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Iteration 2 added /proposta route, presentation mode (4 sections on /, 6 on /proposta), one-click PDF export (jsPDF+html2canvas, real download) and hero QR code with copy-to-clipboard. All features verified end-to-end at desktop viewport (1920x1080). Clipboard tests require granting clipboard-read/write permissions via page.context.grant_permissions. Presentation counter updates take ~2-3s after a navigation (smooth scroll + scroll-position handler), so use waits >=3s before asserting counter changes. PDF export takes ~5-10s on /proposta — use download listener with 60s timeout. The earlier iteration_1 regression for /checkout was not re-tested in depth per the request (spot-check only)."
+}
