@@ -1,0 +1,195 @@
+{
+  "theme": "light_and_dark",
+  "archetype": "Archetype 4 (Swiss & High-Contrast) - Premium Fintech Customization",
+  "brand": {
+    "name": "OAB-SP",
+    "description": "Ordem dos Advogados do Brasil - São Paulo",
+    "tone": "Sophisticated, calm, authoritative, high-trust, premium fintech"
+  },
+  "colors": {
+    "light": {
+      "background": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "primary": "#0A2540",
+      "primary_foreground": "#FFFFFF",
+      "secondary": "#F1F5F9",
+      "secondary_foreground": "#0A2540",
+      "accent": "#C8102E",
+      "accent_foreground": "#FFFFFF",
+      "muted": "#E2E8F0",
+      "muted_foreground": "#64748B",
+      "border": "#E2E8F0",
+      "input": "#E2E8F0",
+      "ring": "#0A2540",
+      "success": "#10B981",
+      "warning": "#F59E0B"
+    },
+    "dark": {
+      "background": "#020817",
+      "surface": "#091A2F",
+      "primary": "#FFFFFF",
+      "primary_foreground": "#0A2540",
+      "secondary": "#1E293B",
+      "secondary_foreground": "#F8FAFC",
+      "accent": "#C8102E",
+      "accent_foreground": "#FFFFFF",
+      "muted": "#1E293B",
+      "muted_foreground": "#94A3B8",
+      "border": "#1E293B",
+      "input": "#1E293B",
+      "ring": "#FFFFFF",
+      "success": "#10B981",
+      "warning": "#F59E0B"
+    }
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Instrument Serif', serif",
+      "body": "'Manrope', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "scale": {
+      "h1": "text-4xl sm:text-5xl lg:text-6xl tracking-tight leading-none",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl tracking-tight",
+      "h3": "text-xl sm:text-2xl tracking-tight",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm tracking-wide",
+      "overline": "text-xs uppercase tracking-[0.2em] font-bold"
+    }
+  },
+  "spacing_and_layout": {
+    "container": "max-w-7xl mx-auto px-6 sm:px-8 lg:px-12",
+    "section": "py-16 sm:py-24 lg:py-32",
+    "bento_grid": "grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12",
+    "card_padding": "p-6 sm:p-8",
+    "alignment": "left-aligned forms and typography. Center alignment only for hero or final success messages.",
+    "radius": "rounded-xl for main containers, rounded-md for inputs and buttons."
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 shadow-sm",
+      "accent": "bg-accent text-accent-foreground hover:bg-accent/90 transition-all duration-300 shadow-md",
+      "outline": "border border-border bg-transparent hover:bg-secondary transition-all duration-300"
+    },
+    "cards": {
+      "default": "bg-surface border border-border shadow-sm",
+      "glass": "backdrop-blur-xl bg-white/70 dark:bg-black/60 border border-white/20 dark:border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)]",
+      "interactive": "hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer"
+    },
+    "inputs": {
+      "default": "bg-transparent border-border focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+    }
+  },
+  "animations": {
+    "framer_motion": {
+      "page_transition": {
+        "initial": { "opacity": 0, "y": 20 },
+        "animate": { "opacity": 1, "y": 0 },
+        "exit": { "opacity": 0, "y": -20 },
+        "transition": { "duration": 0.4, "ease": [0.22, 1, 0.36, 1] }
+      },
+      "stagger_children": {
+        "variants": {
+          "hidden": { "opacity": 0 },
+          "show": {
+            "opacity": 1,
+            "transition": { "staggerChildren": 0.1 }
+          }
+        }
+      },
+      "item_reveal": {
+        "variants": {
+          "hidden": { "opacity": 0, "y": 15 },
+          "show": { "opacity": 1, "y": 0, "transition": { "duration": 0.5, "ease": "easeOut" } }
+        }
+      }
+    },
+    "micro_interactions": {
+      "hover": "Subtle lift (-translate-y-1) and shadow increase on payment cards.",
+      "active": "Scale down (scale-95) on button clicks.",
+      "success": "Confetti burst on final screen + smooth checkmark drawing."
+    }
+  },
+  "flows_and_features": {
+    "view_toggle": "Toggle between Multi-step (Stepper: Identificação -> Pagamento -> Confirmação) and Single-page (All-in-one with sticky summary).",
+    "mock_data": {
+      "name": "Dr. Ricardo Almeida Souza",
+      "oab_number": "OAB/SP 123.456",
+      "cpf": "***.456.789-**",
+      "year": "2026",
+      "base_value": 990.00
+    },
+    "payment_methods": [
+      {
+        "id": "pix",
+        "name": "PIX",
+        "features": ["Instant confirmation", "QR Code reveal animation", "1-click 'Copy PIX' with toast success feedback"]
+      },
+      {
+        "id": "credit_card",
+        "name": "Cartão de Crédito",
+        "features": ["Installment simulator (Slider 1x to 12x)", "Live calculation showing per-month and total value", "Input formatting for card numbers"]
+      },
+      {
+        "id": "debit_card",
+        "name": "Cartão de Débito",
+        "features": ["Standard card inputs"]
+      },
+      {
+        "id": "boleto",
+        "name": "Boleto Bancário",
+        "features": ["Download PDF option", "Barcode copy"]
+      },
+      {
+        "id": "bank_debit",
+        "name": "Débito em Conta",
+        "features": ["Bank selection list (Itaú, Bradesco, Banco do Brasil, Nubank)"]
+      },
+      {
+        "id": "wallets",
+        "name": "Apple Pay / Google Pay",
+        "features": ["One-tap premium UI integration"]
+      }
+    ],
+    "trust_signals": [
+      "SSL Security Badge (Lucide ShieldCheck)",
+      "OAB-SP Institutional Seal (Abstracted via Icons or premium typography)",
+      "'Pagamento processado por gateway certificado' micro-copy"
+    ]
+  },
+  "media": {
+    "images": [
+      {
+        "category": "background",
+        "description": "Deep blue textured surface ideal for digital backgrounds or creative projects. Used in hero or dark mode accents.",
+        "url": "https://images.pexels.com/photos/14917204/pexels-photo-14917204.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      },
+      {
+        "category": "hero",
+        "description": "A bearded lawyer working at his office desk, showing professionalism and expertise.",
+        "url": "https://images.pexels.com/photos/8112112/pexels-photo-8112112.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+      }
+    ],
+    "icons": "lucide-react (Use standard icons like ShieldCheck for security, Copy for PIX, Download for PDF, CheckCircle for success, CreditCard, Banknote, QrCode)"
+  },
+  "testing_attributes": {
+    "rule": "All interactive and key informational elements MUST include a data-testid attribute.",
+    "examples": [
+      "data-testid='flow-toggle-button'",
+      "data-testid='payment-method-pix'",
+      "data-testid='installment-slider'",
+      "data-testid='copy-pix-button'",
+      "data-testid='confirm-payment-button'",
+      "data-testid='download-receipt-button'"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Install required dependencies: framer-motion, lucide-react, @radix-ui/react-icons, clsx, tailwind-merge, canvas-confetti.",
+    "Create a toggle switch in the UI header to switch between 'Multi-step Flow' and 'Single-page Flow' to satisfy the user's request to see both.",
+    "Implement the Glassmorphism sticky order summary panel on the right side (desktop).",
+    "Use Instrument Serif for all headings (H1, H2) and Manrope for body text. Load these from Google Fonts in index.html.",
+    "For the Installment Simulator under the Credit Card method, use a Shadcn Slider component (1 to 12 steps) and dynamically update the summary text (e.g., '12x de R$ 90,75').",
+    "The Success Screen must include a confetti animation (using canvas-confetti) and a 'Baixar Comprovante PDF' button.",
+    "Ensure Dark Mode is fully supported, prioritizing deep navy (#020817) over pure black, and highlighting accents in OAB Red (#C8102E)."
+  ]
+}
