@@ -25,7 +25,7 @@ api_router = APIRouter(prefix="/api")
 
 # Health check endpoint
 @api_router.get("/")
-async def root():
+async def root() -> dict:
     return {
         "message": "Sales Dashboard API",
         "version": "1.0.0",
@@ -33,7 +33,7 @@ async def root():
     }
 
 @api_router.get("/health")
-async def health_check():
+async def health_check() -> dict:
     try:
         # Test MongoDB connection
         await db.command('ping')
@@ -75,11 +75,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
-async def startup_event():
+async def startup_event() -> None:
     logger.info("Sales Dashboard API starting up...")
     logger.info(f"MongoDB connected to: {os.environ.get('DB_NAME', 'sales_dashboard')}")
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_db_client() -> None:
     logger.info("Shutting down Sales Dashboard API...")
     client.close()

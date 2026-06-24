@@ -8,13 +8,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 router = APIRouter(prefix="/api/proposals", tags=["proposals"])
 
 # MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
+mongo_url: str = os.environ.get('MONGO_URL', '')
+client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'sales_dashboard')]
 
 
 @router.get("", response_model=List[Proposal])
-async def get_proposals():
+async def get_proposals() -> List[Proposal]:
     """Get all proposals"""
     proposals = await db.proposals.find({}, {"_id": 0}).to_list(1000)
     
@@ -27,7 +27,7 @@ async def get_proposals():
 
 
 @router.post("", response_model=Proposal)
-async def create_proposal(proposal_input: ProposalCreate):
+async def create_proposal(proposal_input: ProposalCreate) -> Proposal:
     """Create a new proposal"""
     # Get the next proposal ID
     last_proposal = await db.proposals.find_one({}, sort=[("id", -1)])
@@ -48,7 +48,7 @@ async def create_proposal(proposal_input: ProposalCreate):
 
 
 @router.post("/generate-ai")
-async def generate_proposal_with_ai():
+async def generate_proposal_with_ai() -> Proposal:
     """Generate a proposal using AI (mock implementation)"""
     # This would use actual AI to generate proposals in production
     
@@ -74,7 +74,7 @@ async def generate_proposal_with_ai():
 
 
 @router.patch("/{proposal_id}/status")
-async def update_proposal_status(proposal_id: int, status: str):
+async def update_proposal_status(proposal_id: int, status: str) -> dict:
     """Update proposal status"""
     result = await db.proposals.update_one(
         {"id": proposal_id},

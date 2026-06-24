@@ -7,20 +7,20 @@ from motor.motor_asyncio import AsyncIOMotorClient
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
 # MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
+mongo_url: str = os.environ.get('MONGO_URL', '')
+client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'sales_dashboard')]
 
 
 @router.get("", response_model=List[Integration])
-async def get_integrations():
+async def get_integrations() -> List[Integration]:
     """Get all integrations"""
     integrations = await db.integrations.find({}, {"_id": 0}).to_list(1000)
     return integrations
 
 
 @router.patch("/{integration_id}")
-async def update_integration(integration_id: str, update: IntegrationUpdate):
+async def update_integration(integration_id: str, update: IntegrationUpdate) -> dict:
     """Update integration settings"""
     update_data = update.model_dump(exclude_unset=True)
     
@@ -39,7 +39,7 @@ async def update_integration(integration_id: str, update: IntegrationUpdate):
 
 
 @router.post("/{integration_id}/test")
-async def test_integration(integration_id: str):
+async def test_integration(integration_id: str) -> dict:
     """Test integration connection (mock implementation)"""
     # This would actually test the integration in production
     integration = await db.integrations.find_one({"id": integration_id}, {"_id": 0})
@@ -57,7 +57,7 @@ async def test_integration(integration_id: str):
 
 
 @router.post("/seed")
-async def seed_integrations():
+async def seed_integrations() -> dict:
     """Seed initial integrations data"""
     integrations = [
         {

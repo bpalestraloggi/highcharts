@@ -8,13 +8,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 router = APIRouter(prefix="/api/notes", tags=["notes"])
 
 # MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
+mongo_url: str = os.environ.get('MONGO_URL', '')
+client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'sales_dashboard')]
 
 
 @router.get("", response_model=List[Note])
-async def get_notes():
+async def get_notes() -> List[Note]:
     """Get all notes"""
     notes = await db.notes.find({}, {"_id": 0}).to_list(1000)
     
@@ -27,7 +27,7 @@ async def get_notes():
 
 
 @router.post("", response_model=Note)
-async def create_note(note_input: NoteCreate):
+async def create_note(note_input: NoteCreate) -> Note:
     """Create a new note"""
     note_dict = note_input.model_dump()
     note = Note(**note_dict)
@@ -41,7 +41,7 @@ async def create_note(note_input: NoteCreate):
 
 
 @router.delete("/{note_id}")
-async def delete_note(note_id: str):
+async def delete_note(note_id: str) -> dict:
     """Delete a note"""
     result = await db.notes.delete_one({"id": note_id})
     

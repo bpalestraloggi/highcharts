@@ -142,8 +142,8 @@ function useToast() {
       if (index > -1) {
         listeners.splice(index, 1)
       }
-    };
-  }, [state])
+    }
+  }, [])
 
   return {
     ...state,

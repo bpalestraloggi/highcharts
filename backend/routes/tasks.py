@@ -8,13 +8,13 @@ from motor.motor_asyncio import AsyncIOMotorClient
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 # MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
+mongo_url: str = os.environ.get('MONGO_URL', '')
+client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'sales_dashboard')]
 
 
 @router.get("", response_model=List[Task])
-async def get_tasks():
+async def get_tasks() -> List[Task]:
     """Get all tasks"""
     tasks = await db.tasks.find({}, {"_id": 0}).to_list(1000)
     
@@ -27,7 +27,7 @@ async def get_tasks():
 
 
 @router.post("", response_model=Task)
-async def create_task(task_input: TaskCreate):
+async def create_task(task_input: TaskCreate) -> Task:
     """Create a new task"""
     task_dict = task_input.model_dump()
     task = Task(**task_dict)
@@ -41,7 +41,7 @@ async def create_task(task_input: TaskCreate):
 
 
 @router.patch("/{task_id}/status")
-async def update_task_status(task_id: str, status: str):
+async def update_task_status(task_id: str, status: str) -> dict:
     """Update task status"""
     result = await db.tasks.update_one(
         {"id": task_id},
@@ -55,7 +55,7 @@ async def update_task_status(task_id: str, status: str):
 
 
 @router.delete("/{task_id}")
-async def delete_task(task_id: str):
+async def delete_task(task_id: str) -> dict:
     """Delete a task"""
     result = await db.tasks.delete_one({"id": task_id})
     
@@ -66,7 +66,7 @@ async def delete_task(task_id: str):
 
 
 @router.post("/sync-monday")
-async def sync_monday():
+async def sync_monday() -> dict:
     """Sync tasks with Monday.com (mock implementation)"""
     # This would integrate with Monday.com API in production
     return {"message": "Tasks synced with Monday.com", "synced_count": 5}

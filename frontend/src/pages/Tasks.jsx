@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -65,6 +65,17 @@ export default function Tasks() {
       default: return 'default';
     }
   };
+
+  // Memoize filtered tasks to prevent unnecessary recalculations
+  const pendingTasks = useMemo(() => 
+    tasks.filter(task => task.status !== 'concluída'), 
+    [tasks]
+  );
+
+  const completedTasks = useMemo(() => 
+    tasks.filter(task => task.status === 'concluída'), 
+    [tasks]
+  );
 
   return (
     <div className="p-6 lg:p-8">
@@ -143,11 +154,11 @@ export default function Tasks() {
         {/* Pending Tasks */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>Pendentes ({tasks.filter(t => t.status !== 'concluída').length})</CardTitle>
+            <CardTitle>Pendentes ({pendingTasks.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {tasks.filter(task => task.status !== 'concluída').map((task) => (
+              {pendingTasks.map((task) => (
                 <div key={task.id} className="flex items-start gap-3 p-4 border border-border rounded-lg hover:border-primary transition-colors">
                   <Checkbox
                     checked={false}
@@ -181,11 +192,11 @@ export default function Tasks() {
         {/* Completed Tasks */}
         <Card className="shadow-card">
           <CardHeader>
-            <CardTitle>Concluídas ({tasks.filter(t => t.status === 'concluída').length})</CardTitle>
+            <CardTitle>Concluídas ({completedTasks.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {tasks.filter(task => task.status === 'concluída').map((task) => (
+              {completedTasks.map((task) => (
                 <div key={task.id} className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50">
                   <Checkbox
                     checked={true}

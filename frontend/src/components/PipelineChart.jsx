@@ -10,6 +10,16 @@ const data = [
   { etapa: 'Fechamento', quantidade: 8, valor: 80000 },
 ];
 
+// Extract static styles to prevent re-renders
+const tooltipContentStyle = {
+  backgroundColor: 'hsl(var(--card))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: '8px',
+  fontSize: '12px'
+};
+
+const barRadius = [8, 8, 0, 0];
+
 export default function PipelineChart() {
   return (
     <Card className="shadow-card">
@@ -35,18 +45,13 @@ export default function PipelineChart() {
                 axisLine={false}
               />
               <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px'
-                }}
+                contentStyle={tooltipContentStyle}
                 formatter={(value, name) => [
                   name === 'quantidade' ? `${value} leads` : `R$ ${value.toLocaleString('pt-BR')}`,
                   name === 'quantidade' ? 'Quantidade' : 'Valor Total'
                 ]}
               />
-              <Bar dataKey="quantidade" fill="hsl(var(--chart-1))" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="quantidade" fill="hsl(var(--chart-1))" radius={barRadius} />
             </BarChart>
           </ResponsiveContainer>
         </div>

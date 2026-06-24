@@ -7,20 +7,20 @@ from motor.motor_asyncio import AsyncIOMotorClient
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
 # MongoDB connection
-mongo_url = os.environ.get('MONGO_URL')
-client = AsyncIOMotorClient(mongo_url)
+mongo_url: str = os.environ.get('MONGO_URL', '')
+client: AsyncIOMotorClient = AsyncIOMotorClient(mongo_url)
 db = client[os.environ.get('DB_NAME', 'sales_dashboard')]
 
 
 @router.get("", response_model=List[Agent])
-async def get_agents():
+async def get_agents() -> List[Agent]:
     """Get all agents"""
     agents = await db.agents.find({}, {"_id": 0}).to_list(1000)
     return agents
 
 
 @router.patch("/{agent_id}/status")
-async def toggle_agent_status(agent_id: str, status: str):
+async def toggle_agent_status(agent_id: str, status: str) -> dict:
     """Toggle agent status (ativo/pausado)"""
     result = await db.agents.update_one(
         {"id": agent_id},
@@ -34,7 +34,7 @@ async def toggle_agent_status(agent_id: str, status: str):
 
 
 @router.post("/{agent_id}/run")
-async def run_agent(agent_id: str):
+async def run_agent(agent_id: str) -> dict:
     """Execute an agent (mock implementation)"""
     # This would trigger actual AI agent execution in production
     result = await db.agents.update_one(
@@ -49,7 +49,7 @@ async def run_agent(agent_id: str):
 
 
 @router.post("/seed")
-async def seed_agents():
+async def seed_agents() -> dict:
     """Seed initial agents data"""
     agents = [
         {

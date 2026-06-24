@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -12,6 +12,14 @@ const data = [
   { mes: 'Jul', receita: 72000, meta: 60000 },
   { mes: 'Ago', receita: 68000, meta: 65000 },
 ];
+
+// Extract static styles to prevent re-renders
+const tooltipContentStyle = {
+  backgroundColor: 'hsl(var(--card))',
+  border: '1px solid hsl(var(--border))',
+  borderRadius: '8px',
+  fontSize: '12px'
+};
 
 export default function RevenueChart() {
   return (
@@ -50,12 +58,7 @@ export default function RevenueChart() {
                 tickFormatter={(value) => `R$ ${value / 1000}k`}
               />
               <Tooltip 
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px'
-                }}
+                contentStyle={tooltipContentStyle}
                 formatter={(value) => [`R$ ${value.toLocaleString('pt-BR')}`, '']}
               />
               <Area 
