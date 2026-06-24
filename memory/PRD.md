@@ -77,6 +77,14 @@
 - ✅ Dark mode + Sonner toasts + responsivo
 - ✅ Testing agent iteration_1: 18/18 PASS (100%)
 
+### 2026-01 — Iteração 3 (identidade institucional + mobile)
+- ✅ **Tipografia OAB-SP** — substituído Manrope+Instrument Serif por **Hanken Grotesk** (body) + **Newsreader** (heads, italics) — equivalentes free para o stack original Neue Haas Grotesk Display + Publico Banner usado em oabsp.org.br
+- ✅ **Logo oficial OAB-SP** — baixado de `oabsp.org.br/imgs/logo_iso_251030.png`, servido em `/brand/oab-logo.png`. Componente `OABLogo` com variantes `chip` (white-on-navy, padrão), `mark` (raw white), `inverted` (navy via CSS filter)
+- ✅ Logo aplicado em: Header (`/` e `/proposta`), Hero floating receipt card, Footer, e Credit Card preview do PaymentStep
+- ✅ **Mobile responsive** — hamburger menu (`data-testid='mobile-menu-toggle'` + drawer), navegação mobile, padding/heading sizes ajustados em todas as seções, scrollWidth ≤ innerWidth em 360/390/768/1024/1440px, fluxo de checkout totalmente operável em 390x844
+- ✅ Fix crítico: `tailwind.config.js` agora estende `theme.extend.fontFamily.{sans,serif,mono}` para Newsreader/Hanken não serem sobrescritos pelo utility default
+- ✅ Testing agent iteration_3: 33/40 PASS inicial → fix da tipografia → 40/40 validados
+
 ### 2026-01 — Iteração 2 (materiais para apresentação)
 - ✅ **/proposta** — Deck executivo (6 seções): Hero, ROI, Benchmark (Stripe/Mercado Pago/Nubank/Apple Pay), Cronograma (4 fases · 12 semanas), Investimento (R$ 480k em 4 marcos), CTA
 - ✅ **Modo apresentação** — toggle no header, navegação por ←/→/Espaço/PageUp/Down/Home/End/Esc, dock flutuante com dots/contador/prev/next/exit. Tracking de scroll com supressão durante navegação programática.
