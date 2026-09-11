@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2009-2025 Highsoft, Black Label
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Highsoft, Black Label
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -16,14 +18,11 @@
  *
  * */
 
+import type AxisType from '../../Core/Axis/AxisType';
+import type Chart from '../../Core/Chart/Chart';
 import type Pointer from '../../Core/Pointer';
 
-import U from '../../Core/Utilities.js';
-const {
-    defined,
-    isNumber,
-    pick
-} = U;
+import { defined, find, isNumber } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -34,18 +33,19 @@ const {
 /**
  * Define types for editable fields per annotation. There is no need to define
  * numbers, because they won't change their type to string.
- * @private
+ * @internal
  */
 const annotationsFieldsTypes: Record<string, string> = {
-    backgroundColor: 'string',
-    borderColor: 'string',
+    backgroundColor: 'color',
+    backgroundColors: 'color',
+    borderColor: 'color',
     borderRadius: 'string',
-    color: 'string',
-    fill: 'string',
+    color: 'color',
+    fill: 'color',
     fontSize: 'string',
     labels: 'string',
     name: 'string',
-    stroke: 'string',
+    stroke: 'color',
     title: 'string'
 };
 
@@ -58,7 +58,7 @@ const annotationsFieldsTypes: Record<string, string> = {
 /**
  * Returns the first xAxis or yAxis that was clicked with its value.
  *
- * @private
+ * @internal
  *
  * @param {Array<Highcharts.PointerAxisCoordinateObject>} coords
  *        All the chart's x or y axes with a current pointer's axis value.
@@ -76,7 +76,7 @@ function getAssignedAxis(
             axisMax = extremes.max,
             // Correct axis edges when axis has series
             // with pointRange (like column)
-            minPointOffset = pick(coord.axis.minPointOffset, 0);
+            minPointOffset = (coord.axis.minPointOffset ?? 0);
 
         return isNumber(axisMin) && isNumber(axisMax) &&
             coord.value >= (axisMin - minPointOffset) &&
@@ -87,20 +87,52 @@ function getAssignedAxis(
 }
 
 /**
+ * Resolve an axis from an annotation option that can reference it either by its
+ * index (number) or by its id (string).
+ *
+ * @internal
+ *
+ * @param {Highcharts.Chart} chart
+ *        The chart instance.
+ *
+ * @param {'xAxis'|'yAxis'} coll
+ *        The axis collection to look in.
+ *
+ * @param {number|string|undefined} idOrIndex
+ *        The axis index or id.
+ *
+ * @return {Highcharts.Axis|undefined}
+ *         The matching axis, or `undefined` if none was found.
+ */
+function getAxisFromOptions(
+    chart: Chart,
+    coll: ('xAxis'|'yAxis'),
+    idOrIndex?: (number|string)
+): (AxisType|undefined) {
+    if (isNumber(idOrIndex)) {
+        return chart[coll][idOrIndex];
+    }
+
+    return defined(idOrIndex) ?
+        find(
+            chart[coll],
+            (axis): boolean => axis.options.id === idOrIndex
+        ) :
+        void 0;
+}
+
+/**
  * Get field type according to value
  *
- * @private
+ * @internal
  *
- * @param {'boolean'|'number'|'string'} value
- * Atomic type (one of: string, number, boolean)
- *
- * @return {'checkbox'|'number'|'text'}
- * Field type (one of: text, number, checkbox)
+ * @return {'checkbox'|'color'|'number'|'text'}
+ * Field type (one of: text, number, checkbox, color)
  */
 function getFieldType(
     key: (0|string),
     value: ('boolean'|'number'|'string')
-): ('checkbox'|'number'|'text') {
+): ('checkbox'|'color'|'number'|'text') {
     const predefinedType = annotationsFieldsTypes[key];
     let fieldType: string = typeof value;
 
@@ -111,8 +143,9 @@ function getFieldType(
     return ({
         'string': 'text',
         'number': 'number',
-        'boolean': 'checkbox'
-    } as Record<string, ('checkbox'|'number'|'text')>)[
+        'boolean': 'checkbox',
+        'color': 'color'
+    } as Record<string, ('checkbox'|'color'|'number'|'text')>)[
         fieldType
     ];
 }
@@ -123,10 +156,13 @@ function getFieldType(
  *
  * */
 
-const NavigationBindingUtilities = {
+/** @internal */
+const NavigationBindingsUtilities = {
     annotationsFieldsTypes,
     getAssignedAxis,
+    getAxisFromOptions,
     getFieldType
 };
 
-export default NavigationBindingUtilities;
+/** @internal */
+export default NavigationBindingsUtilities;

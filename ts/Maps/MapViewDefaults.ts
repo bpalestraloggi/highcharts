@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -19,8 +21,6 @@
 import type {
     MapViewOptions
 } from './MapViewOptions';
-
-import { Palette } from '../Core/Color/Palettes.js';
 
 /* *
  *
@@ -98,7 +98,7 @@ const MapViewDefaults: MapViewOptions = {
      * @sample {highmaps} maps/demo/mappoint-mapmarker
      *         Padding for individual sides
      *
-     * @type  {number|string|Array<number|string>}
+     * @type  {Highcharts.MapViewPaddingType}
      */
     padding: 0,
 
@@ -118,7 +118,6 @@ const MapViewDefaults: MapViewOptions = {
      * @type   {object}
      */
     projection: {
-
         /**
          * Projection name. Built-in projections are `EqualEarth`,
          * `LambertConformalConic`, `Miller`, `Orthographic` and `WebMercator`.
@@ -164,6 +163,7 @@ const MapViewDefaults: MapViewOptions = {
          *         Projection explorer
          * @sample maps/mapview/projection-america-centric
          *         America-centric world map
+         * @type   {Highcharts.ProjectionRotationOption}
          */
         rotation: void 0
     },
@@ -204,7 +204,7 @@ const MapViewDefaults: MapViewOptions = {
          *
          * @type {Highcharts.ColorType}
          */
-        borderColor: Palette.neutralColor20,
+        borderColor: 'var(--highcharts-neutral-color-20)',
 
         /**
          * The pixel border width of the insets.
@@ -225,12 +225,14 @@ const MapViewDefaults: MapViewOptions = {
 
         /**
          * What coordinate system the `field` and `borderPath` should relate to.
-         * If `plotBox`, they will be fixed to the plot box and responsively
-         * move in relation to the main map. If `mapBoundingBox`, they will be
-         * fixed to the map bounding box, which is constant and centered in
-         * different chart sizes and ratios.
          *
-         * @validvalue ["plotBox", "mapBoundingBox"]
+         * If `plotBox`, they will be fixed to the plot box and responsively
+         * move in relation to the main map.
+         *
+         * If `mapBoundingBox`, they will be fixed to the map bounding box,
+         * which is constant and centered in different chart sizes and ratios.
+         *
+         * @type {Highcharts.MapViewInsetOptionsRelativeToValue}
          */
         relativeTo: 'mapBoundingBox',
 

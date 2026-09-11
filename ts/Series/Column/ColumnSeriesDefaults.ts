@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -16,10 +18,7 @@
  *
  * */
 
-import type ColumnSeries from './ColumnSeries';
-import type { PlotOptionsOf } from '../../Core/Series/SeriesOptions';
-
-import { Palette } from '../../Core/Color/Palettes.js';
+import type ColumnSeriesOptions from './ColumnSeriesOptions';
 
 /* *
  *
@@ -41,7 +40,7 @@ import { Palette } from '../../Core/Color/Palettes.js';
  * @product      highcharts highstock
  * @optionparent plotOptions.column
  */
-const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
+const ColumnSeriesDefaults: ColumnSeriesOptions = {
 
     /**
      * The corner radius of the border surrounding each column or bar. A number
@@ -89,7 +88,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
      * of the global [colors](#colors) when [colorByPoint](
      * #plotOptions.column.colorByPoint) is true.
      *
-     * @type      {Array<Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject>}
+     * @type      {Array<Highcharts.ColorType>}
      * @since     3.0
      * @product   highcharts highstock gantt
      * @apioption plotOptions.column.colors
@@ -170,6 +169,8 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
      *          0.25
      * @sample {highcharts} highcharts/plotoptions/column-pointpadding-none/
      *         0 for tightly packed columns
+     * @sample {highcharts} highcharts/plotoptions/pie-pointpadding/
+     *         Pie point padding plugin
      *
      * @product highcharts highstock gantt
      */
@@ -211,13 +212,16 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
      * The minimal height for a column or width for a bar. By default,
      * 0 values are not shown. To visualize a 0 (or close to zero) point,
      * set the minimal point length to a pixel value like 3\. In stacked
-     * column charts, minPointLength might not be respected for tightly
-     * packed values.
+     * column charts, the length is applied to each point in isolation, so
+     * tightly packed values may overlap. See the stacked sample below for a
+     * plugin that lays out the stack as a whole instead.
      *
      * @sample {highcharts} highcharts/plotoptions/column-minpointlength/
      *         Zero base value
      * @sample {highcharts} highcharts/plotoptions/column-minpointlength-pos-and-neg/
      *         Positive and negative close to zero values
+     * @sample {highcharts} highcharts/plotoptions/column-minpointlength-stacked/
+     *         Stack-aware minimum length
      *
      * @product highcharts highstock gantt
      */
@@ -225,7 +229,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
 
     /**
      * When the series contains less points than the crop threshold, all
-     * points are drawn, event if the points fall outside the visible plot
+     * points are drawn, even if the points fall outside the visible plot
      * area at the current zoom. The advantage of drawing all points
      * (including markers and columns), is that animation is performed on
      * updates. On the other hand, when the series contains more points than
@@ -278,7 +282,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
              * A specific border color for the hovered point. Defaults to
              * inherit the normal state border color.
              *
-             * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+             * @type      {Highcharts.ColorType}
              * @product   highcharts gantt
              * @apioption plotOptions.column.states.hover.borderColor
              */
@@ -286,7 +290,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
             /**
              * A specific color for the hovered point.
              *
-             * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+             * @type      {Highcharts.ColorType}
              * @product   highcharts gantt
              * @apioption plotOptions.column.states.hover.color
              */
@@ -303,7 +307,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
              *
              * @product highcharts highstock gantt
              */
-            brightness: 0.1
+            brightness: 0.2
         },
 
         /**
@@ -319,20 +323,20 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
             /**
              * A specific color for the selected point.
              *
-             * @type    {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+             * @type    {Highcharts.ColorType}
              * @default #cccccc
              * @product highcharts highstock gantt
              */
-            color: Palette.neutralColor20,
+            color: 'var(--highcharts-neutral-color-20)',
 
             /**
              * A specific border color for the selected point.
              *
-             * @type    {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+             * @type    {Highcharts.ColorType}
              * @default #000000
              * @product highcharts highstock gantt
              */
-            borderColor: Palette.neutralColor100
+            borderColor: 'var(--highcharts-neutral-color-100)'
         }
     },
 
@@ -396,11 +400,11 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
      * @sample {highcharts} highcharts/plotoptions/column-bordercolor/
      *         Dark gray border
      *
-     * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+     * @type      {Highcharts.ColorType}
      * @default   #ffffff
      * @product   highcharts highstock gantt
      */
-    borderColor: Palette.backgroundColor
+    borderColor: 'var(--highcharts-background-color)'
 
 };
 
@@ -469,6 +473,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
  * @sample {highcharts} highcharts/series/data-array-of-objects/
  *         Config objects
  *
+ * @basic
  * @type      {Array<number|Array<(number|string),(number|null)>|null|*>}
  * @extends   series.line.data
  * @excluding marker
@@ -485,7 +490,7 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
  * @sample {highcharts} highcharts/plotoptions/column-bordercolor/
  *         Dark gray border
  *
- * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+ * @type      {Highcharts.ColorType}
  * @product   highcharts highstock
  * @apioption series.column.data.borderColor
  */
@@ -530,14 +535,20 @@ const ColumnSeriesDefaults: PlotOptionsOf<ColumnSeries> = {
 
 /**
  * @excluding halo, lineWidth, lineWidthPlus, marker
- * @product   highcharts highstock
+ * @product   highcharts highstock gantt
  * @apioption series.column.states.hover
  */
 
 /**
  * @excluding halo, lineWidth, lineWidthPlus, marker
- * @product   highcharts highstock
+ * @product   highcharts highstock gantt
  * @apioption series.column.states.select
+ */
+
+/**
+ * @extends   series.column.states
+ * @product   highcharts highstock
+ * @apioption series.column.data.states
  */
 
 ''; // Keeps doclets above in JS file

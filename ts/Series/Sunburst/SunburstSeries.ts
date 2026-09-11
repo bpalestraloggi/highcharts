@@ -2,13 +2,14 @@
  *
  *  This module implements sunburst charts in Highcharts.
  *
- *  (c) 2016-2025 Highsoft AS
+ *  (c) 2016-2026 Highsoft AS
  *
- *  Authors: Jon Arild Nygard
+ *  Authors: Jon Arild Nygård
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -52,12 +53,12 @@ const {
     setTreeValues,
     updateRootId
 } = TU;
-import U from '../../Core/Utilities.js';
 import SunburstNode from './SunburstNode.js';
 import SunburstSeriesDefaults from './SunburstSeriesDefaults.js';
-const {
+import SVGElement from '../../Core/Renderer/SVG/SVGElement.js';
+import { composeTextPath } from '../../Extensions/TextPath.js';
+import {
     defined,
-    error,
     extend,
     fireEvent,
     isNumber,
@@ -65,10 +66,9 @@ const {
     isString,
     merge,
     splat
-} = U;
-import SVGElement from '../../Core/Renderer/SVG/SVGElement.js';
-import TextPath from '../../Extensions/TextPath.js';
-TextPath.compose(SVGElement);
+} from '../../Shared/Utilities.js';
+import { error } from '../../Core/Utilities.js';
+composeTextPath(SVGElement);
 
 /* *
  *
@@ -146,6 +146,9 @@ function getDlOptions(
         )[0],
         options = merge<SunburstDataLabelOptions>(optionsLevel, optionsPoint),
         style = options.style = options.style || {},
+        padding: Array<number> = splat(options.padding || 0),
+        paddingLeft = padding[3 % padding.length],
+        paddingRight = padding[1 % padding.length],
         { innerArcLength = 0, outerArcLength = 0 } = point;
 
     let rotationRad: (number|undefined),
@@ -252,7 +255,7 @@ function getDlOptions(
 
         // Apply padding (#8515)
         width = Math.max(
-            (width || 0) - 2 * (options.padding || 0),
+            (width || 0) - paddingLeft - paddingRight,
             1
         );
 
@@ -282,8 +285,8 @@ function getDlOptions(
             options.textPath.enabled = false;
             // Setting width and padding
             width = Math.max(
-                (point.shapeExisting.r * 2) -
-                2 * (options.padding || 0), 1
+                (point.shapeExisting.r * 2) - paddingLeft - paddingRight,
+                1
             );
         } else if (
             point.dlOptions?.textPath &&
@@ -299,7 +302,8 @@ function getDlOptions(
             // Setting width and padding
             width = Math.max(
                 (outerArcLength + innerArcLength) / 2 -
-                2 * (options.padding || 0), 1
+                    paddingLeft - paddingRight,
+                1
             );
             style.whiteSpace = 'nowrap';
         }
@@ -597,17 +601,13 @@ class SunburstSeries extends TreemapSeries {
             addedHack = false;
 
         if (hackDataLabelAnimation) {
-            (series.dataLabelsGroup as any).attr({ opacity: 0 });
+            series.dataLabelsGroup!.attr({ opacity: 0 });
             animateLabels = function (): void {
-                const s = series;
-
                 animateLabelsCalled = true;
-                if (s.dataLabelsGroup) {
-                    s.dataLabelsGroup.animate({
-                        opacity: 1,
-                        visibility: 'inherit'
-                    });
-                }
+                series.dataLabelsGroup!.animate({
+                    opacity: 1,
+                    visibility: 'inherit'
+                });
             };
         }
         for (const point of points) {
@@ -632,16 +632,16 @@ class SunburstSeries extends TreemapSeries {
 
             if (hasRendered && animation) {
                 animationInfo = getAnimation(shape, {
-                    center: center,
-                    point: point,
-                    radians: radians,
-                    innerR: innerR,
-                    idRoot: idRoot,
-                    idPreviousRoot: idPreviousRoot,
-                    shapeExisting: shapeExisting,
-                    shapeRoot: shapeRoot,
-                    shapePreviousRoot: shapePreviousRoot,
-                    visible: visible
+                    center,
+                    point,
+                    radians,
+                    innerR,
+                    idRoot,
+                    idPreviousRoot,
+                    shapeExisting,
+                    shapeRoot,
+                    shapePreviousRoot,
+                    visible
                 });
             } else {
                 // When animation is disabled, attr is called from animation.
@@ -661,12 +661,18 @@ class SunburstSeries extends TreemapSeries {
                 isInside: visible,
                 isNull: !visible // Used for dataLabels & point.draw
             });
-            point.dlOptions = getDlOptions({
-                point: point,
-                level: level,
-                optionsPoint: point.options,
-                shapeArgs: shape
-            });
+            point.dlOptions = {
+                ...getDlOptions({
+                    point,
+                    level,
+                    optionsPoint: point.options,
+                    shapeArgs: shape
+                }),
+                zIndex: void 0
+            };
+            // Delete so it doesn't override anything on merge.
+            delete point.dlOptions.zIndex;
+
             if (!addedHack && visible) {
                 addedHack = true;
                 onComplete = animateLabels;
@@ -680,9 +686,9 @@ class SunburstSeries extends TreemapSeries {
                         (point.selected && 'select') as any
                     ) as any)
                 ),
-                onComplete: onComplete,
-                group: group,
-                renderer: renderer,
+                onComplete,
+                group,
+                renderer,
                 shapeType: 'arc',
                 shapeArgs: shape
             });
@@ -698,7 +704,7 @@ class SunburstSeries extends TreemapSeries {
             // If animateLabels is called before labels were hidden, then call
             // it again.
             if (animateLabelsCalled) {
-                (animateLabels as any)();
+                animateLabels?.();
             }
         } else {
             ColumnSeries.prototype.drawDataLabels.call(series);

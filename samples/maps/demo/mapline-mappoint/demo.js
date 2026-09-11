@@ -80,7 +80,7 @@
             color: '#8b8a',
             states: {
                 hover: {
-                    color: Highcharts.getOptions().colors[4]
+                    color: 'var(--highcharts-color-4)'
                 }
             },
             dataLabels: {
@@ -107,7 +107,7 @@
                     lineWidth: 3
                 }
             },
-            color: Highcharts.getOptions().colors[0],
+            color: '#2caffe',
             tooltip: {
                 pointFormat: '{point.properties.NAME}'
             }
@@ -123,10 +123,7 @@
                 align: 'left',
                 verticalAlign: 'middle'
             },
-            animation: false,
-            tooltip: {
-                pointFormat: '{point.name}'
-            }
+            animation: false
         }]
     });
 

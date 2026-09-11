@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -22,14 +24,12 @@ import type RangeSelector from '../../Stock/RangeSelector/RangeSelector';
 
 import H from '../Globals.js';
 const { isTouchDevice } = H;
-import U from '../Utilities.js';
-const {
+import {
     addEvent,
     correctFloat,
     defined,
-    isNumber,
-    pick
-} = U;
+    isNumber
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -37,12 +37,14 @@ const {
  *
  * */
 
+/** @internal */
 declare module './AxisComposition' {
     interface AxisComposition {
         navigatorAxis?: NavigatorAxisAdditions;
     }
 }
 
+/** @internal */
 export declare class NavigatorAxisComposition extends Axis {
     navigatorAxis: NavigatorAxisAdditions;
 }
@@ -53,9 +55,7 @@ export declare class NavigatorAxisComposition extends Axis {
  *
  * */
 
-/**
- * @private
- */
+/** @internal */
 function onAxisInit(
     this: Axis
 ): void {
@@ -70,7 +70,7 @@ function onAxisInit(
  * For Stock charts, override selection zooming with some special features
  * because X axis zooming is already allowed by the Navigator and Range
  * selector.
- * @private
+ * @internal
  */
 function onAxisSetExtremes(
     this: Axis,
@@ -116,8 +116,8 @@ function onAxisSetExtremes(
 
             // Minimum undefined, resetting zoom
             } else if (previousZoom) {
-                e.min = previousZoom[0];
-                e.max = previousZoom[1];
+                e.min = previousZoom[0]!;
+                e.max = previousZoom[1]!;
                 navigatorAxis.previousZoom = void 0;
             }
         }
@@ -134,10 +134,7 @@ function onAxisSetExtremes(
  *
  * */
 
-/**
- * @private
- * @class
- */
+/** @internal */
 class NavigatorAxisAdditions {
 
     /* *
@@ -146,9 +143,6 @@ class NavigatorAxisAdditions {
      *
      * */
 
-    /**
-     * @private
-     */
     public static compose(
         AxisClass: typeof Axis
     ): void {
@@ -190,9 +184,6 @@ class NavigatorAxisAdditions {
      *
      * */
 
-    /**
-     * @private
-     */
     public destroy(): void {
         this.axis = void 0 as any;
     }
@@ -201,7 +192,7 @@ class NavigatorAxisAdditions {
      * Add logic to normalize the zoomed range in order to preserve the pressed
      * state of range selector buttons
      *
-     * @private
+     * @internal
      * @function Highcharts.Axis#toFixedRange
      */
     public toFixedRange(
@@ -213,12 +204,10 @@ class NavigatorAxisAdditions {
         const axis = this.axis,
             halfPointRange = (axis.pointRange || 0) / 2;
 
-        let newMin = pick<number|undefined, number>(
-                fixedMin, axis.translate(pxMin as any, true, !axis.horiz)
-            ),
-            newMax = pick<number|undefined, number>(
-                fixedMax, axis.translate(pxMax as any, true, !axis.horiz)
-            );
+        let newMin =
+                fixedMin ?? axis.translate(pxMin as any, true, !axis.horiz),
+            newMax =
+                fixedMax ?? axis.translate(pxMax as any, true, !axis.horiz);
 
 
         // Add/remove half point range to/from the extremes (#1172)
@@ -247,4 +236,5 @@ class NavigatorAxisAdditions {
  *
  * */
 
+/** @internal */
 export default NavigatorAxisAdditions;

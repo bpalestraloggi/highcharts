@@ -2,11 +2,13 @@
  *
  *  Organization chart module
  *
- *  (c) 2018-2025 Torstein Honsi
+ *  (c) 2018-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -23,8 +25,6 @@ import type OrganizationPoint from './OrganizationPoint';
 import type OrganizationSeriesOptions from './OrganizationSeriesOptions';
 import type Point from '../../Core/Series/Point';
 import type SankeyPoint from '../Sankey/SankeyPoint';
-
-import { Palette } from '../../Core/Color/Palettes.js';
 
 /* *
  *
@@ -50,6 +50,7 @@ import { Palette } from '../../Core/Color/Palettes.js';
  * @excluding    allowPointSelect, curveFactor, dataSorting
  * @since        7.1.0
  * @product      highcharts
+ * @requires     modules/sankey
  * @requires     modules/organization
  * @optionparent plotOptions.organization
  */
@@ -60,7 +61,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
      *
      * @type {Highcharts.ColorString}
      */
-    borderColor: Palette.neutralColor60,
+    borderColor: 'var(--highcharts-neutral-color-60)',
 
     /**
      * The border radius of the node cards.
@@ -77,7 +78,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
      * @sample   highcharts/series-organization/link-options
      *           Square links
      *
-     * @deprecated
+     * @deprecated 10.3.0
      * @apioption series.organization.linkRadius
      */
 
@@ -104,7 +105,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
          *
          * @type {Highcharts.ColorString}
          */
-        color: Palette.neutralColor60,
+        color: 'var(--highcharts-neutral-color-60)',
         /**
          * The line width of the links connecting nodes, in pixels.
          *
@@ -114,7 +115,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
         lineWidth: 1,
         /**
          * Radius for the rounded corners of the links between nodes.
-         * Works for `default` link type.
+         * Works for the `orthogonal` link type.
          *
          * @sample   highcharts/series-organization/link-options
          *           Square links
@@ -127,11 +128,11 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
          *           Different link types
          *
          * @declare Highcharts.OrganizationLinkTypeValue
-         * @type {'default' | 'curved' | 'straight'}
-         * @default 'default'
+         * @type {'orthogonal' | 'curved' | 'straight'}
+         * @default 'orthogonal'
          * @product highcharts
          */
-        type: 'default'
+        type: 'orthogonal'
     },
     borderWidth: 1,
 
@@ -142,7 +143,6 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
      */
     dataLabels: {
 
-        /* eslint-disable valid-jsdoc */
         /**
          * A callback for defining the format for _nodes_ in the
          * organization chart. The `nodeFormat` option takes precedence
@@ -240,8 +240,13 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
             }
 
             if (title) {
-                html += '<p ' + styleAttr(titleStyle) + '>' +
-                    (title || '') + '</p>';
+                html += '<p ' + styleAttr(titleStyle) + '>' + title + '</p>';
+            } else {
+                // Required to prevent a glitch in iOS Safari, where text would
+                // flow outside the box if the title is missing (#25043)
+                html += `<p aria-hidden="true"
+                        style="line-height:0;margin:1px;font-size:1px;opacity:0"
+                    >.</p>`;
             }
 
             if (description) {
@@ -253,22 +258,27 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
                 '</div>';
             return html;
         },
-        /* eslint-enable valid-jsdoc */
 
         style: {
-            /** @internal */
             fontWeight: 'normal',
-            /** @internal */
             fontSize: '0.9em',
-            /** @internal */
             textAlign: 'left'
         },
 
         useHTML: true,
 
+        /**
+         * @extends plotOptions.series.dataLabels.textPath
+         */
         linkTextPath: {
+            /**
+             * @default { startOffset: '95%', textAnchor: 'end' }
+             */
             attributes: {
+                /** @ignore */
                 startOffset: '95%',
+
+                /** @ignore */
                 textAnchor: 'end'
             }
         }
@@ -300,9 +310,10 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
      * @sample highcharts/series-organization/hanging-shrink
      *         Every indent decreases the nodes' width
      *
-     * @type {Highcharts.OrganizationHangingIndentTranslationValue}
-     * @since 10.0.0
+     * @declare Highcharts.OrganizationHangingIndentTranslationValue
      * @default inherit
+     * @since   10.0.0
+     * @type    {"inherit"|"cumulative"|"shrink"}
      *
      * @private
      */
@@ -326,7 +337,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
      * [link.color](#plotOptions.organization.link.color).
      *
      * @type {Highcharts.ColorString}
-     * @deprecated
+     * @deprecated 10.3.0
      * @apioption series.organization.linkColor
      * @private
      */
@@ -339,7 +350,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
      * @sample   highcharts/series-organization/link-options
      *           Square links
      *
-     * @deprecated
+     * @deprecated 10.3.0
      * @apioption series.organization.linkLineWidth
      * @private
      */
@@ -347,7 +358,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
     /**
      * In a horizontal chart, the minimum width of the **hanging** nodes
      * only, in pixels. In a vertical chart, the minimum height of the
-     * **haning** nodes only, in pixels too.
+     * **hanging** nodes only, in pixels too.
      *
      * Note: Used only when
      * [hangingIndentTranslation](#plotOptions.organization.hangingIndentTranslation)
@@ -523,6 +534,7 @@ const OrganizationSeriesDefaults: OrganizationSeriesOptions = {
  *     }]
  *  ```
  *
+ * @basic
  * @type      {Array<*>}
  * @extends   series.sankey.data
  * @product   highcharts

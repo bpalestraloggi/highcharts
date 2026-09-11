@@ -33,18 +33,8 @@ Gulp.registry(new GulpForwardReference());
     'dashboards/api-docs',
     'dashboards/api-server',
     'dashboards/cypress',
-    'dashboards/dist',
-    'dashboards/dist-build',
-    'dashboards/dist-examples',
-    'dashboards/dist-release',
-    'dashboards/dist-upload',
-    'dashboards/dist-zip',
-    'dashboards/scripts',
-    'dashboards/scripts-dts',
-    'dashboards/scripts-watch',
-    'dashboards/test',
-    'dashboards/lint',
     'default',
+    'dependency-mapping',
     'dist',
     'dist-clean',
     'dist-compress',
@@ -60,7 +50,10 @@ Gulp.registry(new GulpForwardReference());
     'dist-upload-studies',
     'dist-upload-more',
     'dist-verify',
+    'generate-samples',
     'grid/api-docs',
+    'grid/deprecated-options',
+    'grid/cypress',
     'jsdoc',
     'jsdoc-classes',
     'jsdoc-clean',
@@ -77,7 +70,6 @@ Gulp.registry(new GulpForwardReference());
     'lint-dts',
     'lint-samples',
     'lint-ts',
-    'palette',
     'prep-release',
     'prepare-react-samples',
     'reset-clone',
@@ -89,6 +81,7 @@ Gulp.registry(new GulpForwardReference());
     'scripts-css',
     'scripts-es5',
     'scripts-esx',
+    'scripts-icons',
     'scripts-js',
     'scripts-messages',
     'scripts-ts',
@@ -96,20 +89,18 @@ Gulp.registry(new GulpForwardReference());
     'scripts-webpack',
     'test',
     'test-docs',
-    'test-karma',
     'test-tree',
-    'test-ts',
     'test-cypress',
     'update',
     'unsorted/build-modules',
     'unsorted/compare-filesizes',
     'unsorted/filesize',
     'unsorted/get-filesizes',
-    'unsorted/nightly',
     'unsorted/patch-ink-docstrap',
     'unsorted/update-vendor',
     'unsorted/upload-files',
     'update-pr-testresults',
+    'update-nightly-testresults',
     'pr-size-table'
 ]));
 
@@ -119,7 +110,7 @@ Gulp.registry(new GulpForwardReference());
  *
  * */
 
-(function (tasks) {
+(function (tasks: Record<string, string>) {
     Object
         .keys(tasks)
         .forEach(alias => Gulp.task(alias, Gulp.series(tasks[alias])));

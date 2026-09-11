@@ -24,7 +24,7 @@
             chart: {
                 marginBottom: 120,
                 reflow: false,
-                marginLeft: 50,
+                marginLeft: 60,
                 marginRight: 20,
                 style: {
                     position: 'absolute'
@@ -93,7 +93,7 @@
                 reflow: false,
                 borderWidth: 0,
                 backgroundColor: null,
-                marginLeft: 50,
+                marginLeft: 60,
                 marginRight: 20,
                 zooming: {
                     type: 'x'
@@ -149,7 +149,7 @@
             },
             xAxis: {
                 type: 'datetime',
-                showLastTickLabel: true,
+                showLastLabel: true,
                 maxZoom: 14 * 24 * 3600000, // fourteen days
                 plotBands: [{
                     id: 'mask-before',

@@ -1,7 +1,8 @@
 const changelog = document.querySelector('#changelog');
 
 Grid.grid('container', {
-    dataTable: {
+    gridKey: 'YOUR-GRID-KEY-HERE',
+    data: {
         columns: {
             available: [true, false, true, true],
             product: ['Apples', 'Pears', 'Plums', 'Bananas'],
@@ -25,6 +26,9 @@ Grid.grid('container', {
     },
     columns: [{
         id: 'available',
+        header: {
+            format: 'Availability'
+        },
         dataType: 'boolean',
         cells: {
             format: '{#if value}✓{else}✗{/if}',
@@ -36,13 +40,22 @@ Grid.grid('container', {
         }
     }, {
         id: 'weight',
+        header: {
+            format: 'Weight'
+        },
         cells: {
             editMode: {
-                validationRules: ['notEmpty', 'number']
+                validationRules: ['notEmpty', 'number'],
+                renderer: {
+                    type: 'numberInput'
+                }
             }
         }
     }, {
         id: 'product',
+        header: {
+            format: 'Product'
+        },
         cells: {
             editMode: {
                 enabled: false
@@ -50,6 +63,9 @@ Grid.grid('container', {
         }
     }, {
         id: 'country',
+        header: {
+            format: 'Source'
+        },
         dataType: 'string',
         cells: {
             formatter: function () {

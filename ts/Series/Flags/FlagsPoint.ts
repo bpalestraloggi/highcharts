@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -21,6 +23,7 @@ import type CSSObject from '../../Core/Renderer/CSSObject';
 import type FlagsPointOptions from './FlagsPointOptions';
 import type FlagsSeries from './FlagsSeries';
 import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
+import { isNumber } from '../../Shared/Utilities.js';
 const {
     column: {
         prototype: {
@@ -28,8 +31,6 @@ const {
         }
     }
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const { isNumber } = U;
 
 /* *
  *
@@ -37,6 +38,7 @@ const { isNumber } = U;
  *
  * */
 
+/** @internal */
 class FlagsPoint extends ColumnPoint {
 
     /* *
@@ -74,7 +76,7 @@ class FlagsPoint extends ColumnPoint {
      * */
 
     /**
-     * @private
+     * @internal
      */
     public isValid(): boolean {
         // #9233 - Prevent from treating flags as null points (even if
@@ -83,7 +85,7 @@ class FlagsPoint extends ColumnPoint {
     }
 
     /**
-     * @private
+     * @internal
      */
     public hasNewShapeType(): (boolean|undefined) {
         const shape = this.options.shape || this.series.options.shape;
@@ -99,4 +101,5 @@ class FlagsPoint extends ColumnPoint {
  *
  * */
 
+/** @internal */
 export default FlagsPoint;

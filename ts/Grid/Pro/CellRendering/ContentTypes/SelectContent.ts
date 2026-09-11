@@ -2,14 +2,16 @@
  *
  *  Select Cell Content class
  *
- *  (c) 2020-2025 Highsoft AS
+ *  (c) 2020-2026 Highsoft AS
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  *  Authors:
- *  - Dawid Dragula
+ *  - Dawid Draguła
+ *  - Sebastian Bochan
  *
  * */
 
@@ -21,13 +23,14 @@
  *
  * */
 
-import type DataTable from '../../../../Data/DataTable';
+import type { CellType as DataTableCellType } from '../../../../Data/DataTable';
 import type { EditModeContent } from '../../CellEditing/CellEditMode';
 import type SelectRenderer from '../Renderers/SelectRenderer';
 import type TableCell from '../../../Core/Table/Body/TableCell';
 
 import CellContentPro from '../CellContentPro.js';
 import AST from '../../../../Core/Renderer/HTML/AST.js';
+import Globals from '../../../Core/Globals.js';
 
 
 /* *
@@ -41,6 +44,9 @@ import AST from '../../../../Core/Renderer/HTML/AST.js';
  */
 class SelectContent extends CellContentPro implements EditModeContent {
 
+    /**
+     * Whether to finish the edit after a change.
+     */
     public finishAfterChange: boolean = true;
 
     public blurHandler?: (e: FocusEvent) => void;
@@ -82,14 +88,27 @@ class SelectContent extends CellContentPro implements EditModeContent {
      *
      * */
 
+    /**
+     * Adds the select element to the parent element.
+     * @param parentElement The parent element to add the select element to.
+     * @returns The select element.
+     */
     protected override add(
         parentElement: HTMLElement = this.cell.htmlElement
     ): HTMLSelectElement {
         const cell = this.cell;
-
+        const { options } = this.renderer as SelectRenderer;
         const select = this.select = document.createElement('select');
+
         select.tabIndex = -1;
         select.name = cell.column.id + '-' + cell.row.id;
+        select.classList.add(Globals.getClassName('input'));
+
+        if (options.attributes) {
+            Object.entries(options.attributes).forEach(([key, value]): void => {
+                select.setAttribute(key, value);
+            });
+        }
 
         this.update();
 
@@ -103,6 +122,9 @@ class SelectContent extends CellContentPro implements EditModeContent {
         return select;
     }
 
+    /**
+     * Updates the select element.
+     */
     public override update(): void {
         const cell = this.cell;
         const { options } = this.renderer as SelectRenderer;
@@ -127,6 +149,9 @@ class SelectContent extends CellContentPro implements EditModeContent {
         }
     }
 
+    /**
+     * Destroys the content.
+     */
     public override destroy(): void {
         const select = this.select;
         this.cell.htmlElement.removeEventListener(
@@ -145,11 +170,17 @@ class SelectContent extends CellContentPro implements EditModeContent {
         select.remove();
     }
 
+    /**
+     * Gets the raw value of the select element.
+     */
     public get rawValue(): string {
         return this.select.value;
     }
 
-    public get value(): DataTable.CellType {
+    /**
+     * Gets the value of the select element.
+     */
+    public get value(): DataTableCellType {
         const val = this.select.value;
         switch (this.cell.column.dataType) {
             case 'datetime':
@@ -162,6 +193,10 @@ class SelectContent extends CellContentPro implements EditModeContent {
         }
     }
 
+    /**
+     * Gets the main element (select) of the content.
+     * @returns The select element.
+     */
     public getMainElement(): HTMLSelectElement {
         return this.select;
     }
@@ -171,7 +206,7 @@ class SelectContent extends CellContentPro implements EditModeContent {
             this.changeHandler(e);
         } else {
             this.cell.htmlElement.focus();
-            void this.cell.setValue(this.value, true);
+            void this.cell.editValue(this.value);
         }
     };
 

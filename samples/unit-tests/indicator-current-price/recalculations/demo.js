@@ -143,6 +143,35 @@ QUnit.test(
             'There should only be two price labels rendered, #17790.'
         );
 
+        const compared = chart.addSeries({
+            compare: 'percent',
+            data: [100, 150, 200],
+            lastPrice: {
+                enabled: true,
+                label: {
+                    enabled: true
+                }
+            }
+        });
+
+        assert.close(
+            compared.lastPrice?.pathArray[0][2],
+            compared.yAxis.toPixels(
+                compared.dataModify.modifyValue(compared.getColumn('y').at(-1))
+            ),
+            1,
+            `The lastPrice line should follow the compared value, not the raw
+            one, #23212.`
+        );
+
+        assert.notEqual(
+            compared.lastPriceLabel?.visibility,
+            'hidden',
+            'The lastPrice label should be visible with compare set, #23212.'
+        );
+
+        compared.remove();
+
         const lvpLabel = chart.series[0].lastVisiblePriceLabel,
             lpLabel = chart.series[0].lastPriceLabel;
 
@@ -162,6 +191,31 @@ QUnit.test(
             +lvpLabel.text.element.textContent,
             `Last visible price label value should be equal to last inside point
             value, #18528.`
+        );
+
+        chart.series[0].hide();
+        assert.strictEqual(
+            lvpLabel.visibility && lpLabel.visibility === 'hidden',
+            true,
+            'Both labels should be hidden after series hide, #22658.'
+        );
+        chart.series[0].show();
+
+        chart.addSeries({
+            data: [100],
+            visible: false,
+            lastPrice: {
+                enabled: true,
+                label: {
+                    enabled: true
+                }
+            }
+        });
+        assert.strictEqual(
+            chart.series[1].lastPriceLabel && chart.series[1].lastPrice,
+            undefined,
+            `Last price label should be hidden when series is not visible on
+            first render, #22658.`
         );
     }
 );

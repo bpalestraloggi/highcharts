@@ -1,11 +1,13 @@
 /* *
- *  (c) 2010-2025 Rafal Sebestjanski
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Rafał Sebestjański
  *
  *  Directional Movement Index (DMI) indicator for Highcharts Stock
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -22,23 +24,21 @@ import type {
     DMIParamsOptions
 } from './DMIOptions';
 import type DMIPoint from './DMIPoint';
-import type { IndicatorLinkedSeriesLike } from '../IndicatorLike';
+import type { IndicatorLinkedSeriesBase } from '../IndicatorBase';
 import type IndicatorValuesObject from '../IndicatorValuesObject';
 import type LineSeries from '../../../Series/Line/LineSeries';
 
 import MultipleLinesComposition from '../MultipleLinesComposition.js';
-import { Palette } from '../../../Core/Color/Palettes.js';
 import SeriesRegistry from '../../../Core/Series/SeriesRegistry.js';
 const {
     sma: SMAIndicator
 } = SeriesRegistry.seriesTypes;
-import U from '../../../Core/Utilities.js';
-const {
+import {
     correctFloat,
     extend,
     isArray,
     merge
-} = U;
+} from '../../../Shared/Utilities.js';
 
 /* *
  *
@@ -49,7 +49,7 @@ const {
 /**
  * The Directional Movement Index (DMI) series type.
  *
- * @private
+ * @internal
  * @class
  * @name Highcharts.seriesTypes.dmi
  *
@@ -68,7 +68,7 @@ class DMIIndicator extends SMAIndicator {
      * This series requires the `linkedTo` option to be set and should
      * be loaded after the `stock/indicators/indicators.js` file.
      *
-     * @sample stock/indicators/dmi
+     * @sample {highstock} stock/indicators/dmi
      *         DMI indicator
      *
      * @extends      plotOptions.sma
@@ -119,7 +119,7 @@ class DMIIndicator extends SMAIndicator {
                  *
                  * @type {Highcharts.ColorString}
                  */
-                lineColor: Palette.positiveColor // Green-ish
+                lineColor: 'var(--highcharts-positive-color)' // Green-ish
             }
         },
         /**
@@ -139,7 +139,7 @@ class DMIIndicator extends SMAIndicator {
                  *
                  * @type {Highcharts.ColorString}
                  */
-                lineColor: Palette.negativeColor // Red-ish
+                lineColor: 'var(--highcharts-negative-color)' // Red-ish
             }
         },
         dataGrouping: {
@@ -227,7 +227,7 @@ class DMIIndicator extends SMAIndicator {
     }
 
     public getValues<TLinkedSeries extends LineSeries>(
-        series: TLinkedSeries&IndicatorLinkedSeriesLike,
+        series: TLinkedSeries&IndicatorLinkedSeriesBase,
         params: DMIParamsOptions
     ): (IndicatorValuesObject<TLinkedSeries>|undefined) {
         const period: number = (params.period as any),
@@ -353,6 +353,7 @@ class DMIIndicator extends SMAIndicator {
  *
  * */
 
+/** @internal */
 interface DMIIndicator extends MultipleLinesComposition.IndicatorComposition {
     nameBase: string;
     pointArrayMap: Array<keyof DMIPoint>;
@@ -377,6 +378,7 @@ MultipleLinesComposition.compose(DMIIndicator);
  *
  * */
 
+/** @internal */
 declare module '../../../Core/Series/SeriesType' {
     interface SeriesTypeRegistry {
         dmi: typeof DMIIndicator;
@@ -390,6 +392,7 @@ SeriesRegistry.registerSeriesType('dmi', DMIIndicator);
  *
  * */
 
+/** @internal */
 export default DMIIndicator;
 
 /* *

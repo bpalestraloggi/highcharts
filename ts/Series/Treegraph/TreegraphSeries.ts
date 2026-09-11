@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Pawel Lysy Grzegorz Blachlinski
+ *  (c) 2010-2026 Highsoft AS
+ *  Authors: Paweł Lysy, Grzegorz Blachliński
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -41,16 +43,6 @@ import TreegraphNode from './TreegraphNode.js';
 import TreegraphPoint from './TreegraphPoint.js';
 import TU from '../TreeUtilities.js';
 const { getLevelOptions, getNodeWidth } = TU;
-import U from '../../Core/Utilities.js';
-const {
-    arrayMax,
-    crisp,
-    extend,
-    merge,
-    pick,
-    relativeLength,
-    splat
-} = U;
 
 import TreegraphLink from './TreegraphLink.js';
 import TreegraphLayout from './TreegraphLayout.js';
@@ -58,11 +50,20 @@ import { TreegraphSeriesLevelOptions } from './TreegraphSeriesOptions.js';
 import TreegraphSeriesDefaults from './TreegraphSeriesDefaults.js';
 import TreemapPoint from '../Treemap/TreemapPoint.js';
 import SVGElement from '../../Core/Renderer/SVG/SVGElement.js';
-import TextPath from '../../Extensions/TextPath.js';
-TextPath.compose(SVGElement);
+import { composeTextPath } from '../../Extensions/TextPath.js';
+import {
+    arrayMax,
+    crisp,
+    extend,
+    merge,
+    relativeLength,
+    splat
+} from '../../Shared/Utilities.js';
+composeTextPath(SVGElement);
+
 /* *
  *
- *  Declatarions
+ *  Declarations
  *
  * */
 
@@ -121,7 +122,7 @@ class TreegraphSeries extends TreemapSeries {
 
     public nodeList: Array<TreegraphNode> = [];
 
-    public layoutAlgorythm!: TreegraphLayout;
+    public layoutAlgorithm!: TreegraphLayout;
 
     public links: Array<TreegraphLink> = [];
 
@@ -135,7 +136,7 @@ class TreegraphSeries extends TreemapSeries {
 
     public init(): void {
         super.init.apply(this, arguments);
-        this.layoutAlgorythm = new TreegraphLayout();
+        this.layoutAlgorithm = new TreegraphLayout();
 
         // Register the link data labels in the label collector for overlap
         // detection.
@@ -176,6 +177,7 @@ class TreegraphSeries extends TreemapSeries {
             series = this,
             plotSizeX = chart.plotSizeX as number,
             plotSizeY = chart.plotSizeY as number,
+            linkWidth = series.options.link?.lineWidth || 0,
             columnCount = arrayMax(
                 this.points.map((p): number => p.node.xPosition)
             );
@@ -210,6 +212,10 @@ class TreegraphSeries extends TreemapSeries {
                     markerOptions.radius || 0,
                     Math.min(plotSizeX, plotSizeY)
                 ),
+                lineWidth = Math.max(
+                    markerOptions.lineWidth || 0,
+                    linkWidth
+                ),
                 symbol = markerOptions.symbol,
                 nodeSizeY = (symbol === 'circle' || !markerOptions.height) ?
                     radius * 2 :
@@ -221,25 +227,20 @@ class TreegraphSeries extends TreemapSeries {
             node.nodeSizeX = nodeSizeX;
             node.nodeSizeY = nodeSizeY;
 
-            let lineWidth;
             if (node.xPosition <= minX) {
                 minX = node.xPosition;
-                lineWidth = markerOptions.lineWidth || 0;
                 minXSize = Math.max(nodeSizeX + lineWidth, minXSize);
             }
             if (node.xPosition >= maxX) {
                 maxX = node.xPosition;
-                lineWidth = markerOptions.lineWidth || 0;
                 maxXSize = Math.max(nodeSizeX + lineWidth, maxXSize);
             }
             if (node.yPosition <= minY) {
                 minY = node.yPosition;
-                lineWidth = markerOptions.lineWidth || 0;
                 minYSize = Math.max(nodeSizeY + lineWidth, minYSize);
             }
             if (node.yPosition >= maxY) {
                 maxY = node.yPosition;
-                lineWidth = markerOptions.lineWidth || 0;
                 maxYSize = Math.max(nodeSizeY + lineWidth, maxYSize);
             }
         });
@@ -263,10 +264,10 @@ class TreegraphSeries extends TreemapSeries {
         const links = [] as TreegraphLink[];
         this.data.forEach((point): void => {
             const levelOptions =
-                (series.mapOptionsToLevel as any)[point.node.level || 0] || {};
+                (series.mapOptionsToLevel as any)[point.node.level ?? 0] || {};
             if (point.node.parent) {
                 const pointOptions = merge(levelOptions, point.options);
-                if (!point.linkToParent || point.linkToParent.destroyed) {
+                if (!point.linkToParent || point.linkToParent.condemned) {
                     const link = new series.LinkClass(
                         series,
                         pointOptions,
@@ -276,8 +277,8 @@ class TreegraphSeries extends TreemapSeries {
                     point.linkToParent = link;
                 } else {
                     // #19552
-                    point.collapsed = pick(
-                        point.collapsed,
+                    point.collapsed = (
+                        point.collapsed ??
                         (
                             this.mapOptionsToLevel[point.node.level] || {}
                         ).collapsed
@@ -305,7 +306,7 @@ class TreegraphSeries extends TreemapSeries {
         parent?: string
     ): this['tree'] {
         const point = this.points[index];
-        level = (point && point.level) || level;
+        level = point?.level ?? level;
         return super.buildTree.call(this, id, index, level, list, parent);
     }
 
@@ -322,8 +323,8 @@ class TreegraphSeries extends TreemapSeries {
         const point = node.point;
         if (point) {
             // Take the level options into account.
-            point.collapsed = pick(
-                point.collapsed,
+            point.collapsed = (
+                point.collapsed ??
                 (this.mapOptionsToLevel[node.level] || {}).collapsed
             );
             point.visible = visibility;
@@ -378,7 +379,7 @@ class TreegraphSeries extends TreemapSeries {
         series.links = series.getLinks();
         series.setTreeValues(tree);
 
-        this.layoutAlgorythm.calculatePositions(series);
+        this.layoutAlgorithm.calculatePositions(series);
         series.layoutModifier = this.getLayoutModifiers();
 
         this.points.forEach((point): void => {
@@ -400,10 +401,12 @@ class TreegraphSeries extends TreemapSeries {
         const fromNode = link.fromNode,
             toNode = link.toNode,
             linkWidth = this.options.link?.lineWidth || 0,
-            factor = pick(this.options.link?.curveFactor, 0.5),
-            type = pick(
-                link.options.link?.type,
-                this.options.link?.type,
+            factor = this.options.link?.curveFactor ?? 0.5,
+            hasXData = toNode.x !== toNode.node.level ||
+                fromNode.x !== fromNode.node.level,
+            type = (
+                link.options.link?.type ??
+                this.options.link?.type ??
                 'default'
             );
 
@@ -431,15 +434,24 @@ class TreegraphSeries extends TreemapSeries {
                 x2 = crisp(toNode.shapeArgs.x || 0, linkWidth);
 
             if (inverted) {
-                x1 -= fromNodeWidth;
-                x2 += (toNode.shapeArgs.width || 0);
+                x1 -= Math.round(fromNodeWidth);
+                x2 += Math.round(toNode.shapeArgs.width || 0);
             }
-            const diff = toNode.node.xPosition - fromNode.node.xPosition;
+
+            const xDiff = toNode.node.xPosition - fromNode.node.xPosition,
+                fullWidth = Math.abs(x2 - x1) + fromNodeWidth,
+                scopeWidth = hasXData ? fullWidth : (fullWidth / xDiff),
+                width = scopeWidth - fromNodeWidth,
+                offset = width * factor * (inverted ? -1 : 1),
+                xMiddle = crisp((x2 + x1) / 2, linkWidth),
+                bendAt = relativeLength(
+                    link.options.link?.bendAt ??
+                    this.options.link?.bendAt ??
+                    '50%',
+                    fullWidth - fromNodeWidth
+                );
+
             link.shapeType = 'path';
-            const fullWidth = Math.abs(x2 - x1) + fromNodeWidth,
-                width = (fullWidth / diff) - fromNodeWidth,
-                offset = width * factor * (inverted ? -1 : 1);
-            const xMiddle = crisp((x2 + x1) / 2, linkWidth);
             link.plotX = xMiddle;
             link.plotY = y2;
 
@@ -453,7 +465,8 @@ class TreegraphSeries extends TreemapSeries {
                     offset,
                     inverted,
                     parentVisible: toNode.visible,
-                    radius: this.options.link?.radius
+                    radius: this.options.link?.radius,
+                    bendAt
                 })
             };
 
@@ -556,7 +569,7 @@ class TreegraphSeries extends TreemapSeries {
     }
 
     /**
-     * Treegraph has two separate collecions of nodes and lines,
+     * Treegraph has two separate collections of nodes and lines,
      * render dataLabels for both sets.
      */
     public drawDataLabels(): void {
@@ -576,7 +589,7 @@ class TreegraphSeries extends TreemapSeries {
         // Links must also be destroyed.
         if (this.links) {
             for (const link of this.links) {
-                link.destroy();
+                link.destroy(true);
             }
             this.links.length = 0;
         }
@@ -593,13 +606,11 @@ class TreegraphSeries extends TreemapSeries {
         state?: StatesOptionsKey
     ): SVGAttributes {
         const series = this,
-            levelOptions = point &&
-                (series.mapOptionsToLevel as any)[point.node.level || 0] || {},
-            options = point && point.options,
-            stateOptions =
-                (levelOptions.states &&
-                    (levelOptions.states as any)[state as any]) ||
-                {};
+            levelOptions: Partial<TreegraphSeriesLevelOptions> = point &&
+                series.mapOptionsToLevel[point.node.level] ||
+                {},
+            options = point?.options || {},
+            stateOptions = levelOptions.states?.[state || 'normal'] || {};
 
         if (point) {
             point.options.marker = merge(
@@ -609,19 +620,17 @@ class TreegraphSeries extends TreemapSeries {
             );
         }
 
-        const linkColor = pick(
-                stateOptions && stateOptions.link && stateOptions.link.color,
-                options && options.link && options.link.color,
-                levelOptions && levelOptions.link && levelOptions.link.color,
-                series.options.link && series.options.link.color
+        const linkColor = (
+                stateOptions.link?.color ??
+                options.link?.color ??
+                levelOptions.link?.color ??
+                series.options.link?.color
             ),
-            linkLineWidth = pick(
-                stateOptions && stateOptions.link &&
-                stateOptions.link.lineWidth,
-                options && options.link && options.link.lineWidth,
-                levelOptions && levelOptions.link &&
-                levelOptions.link.lineWidth,
-                series.options.link && series.options.link.lineWidth
+            linkLineWidth = (
+                stateOptions.link?.lineWidth ??
+                options.link?.lineWidth ??
+                levelOptions.link?.lineWidth ??
+                series.options.link?.lineWidth
             ),
             attribs = seriesProto.pointAttribs.call(series, point, state);
 
@@ -650,12 +659,14 @@ class TreegraphSeries extends TreemapSeries {
      */
     public translateNode(point: TreegraphPoint): void {
         const chart = this.chart,
-            node = point.node,
+            { node, plotX = 0 } = point,
             plotSizeY = chart.plotSizeY as number,
             plotSizeX = chart.plotSizeX as number,
             // Get the layout modifiers which are common for all nodes.
             { ax, bx, ay, by } = this.layoutModifier,
-            x = ax * node.xPosition + bx,
+            x = this.isCartesian ?
+                (chart.inverted ? plotSizeX - plotX : plotX) :
+                ax * node.xPosition + bx,
             y = ay * node.yPosition + by,
             level = this.mapOptionsToLevel[node.level] || {},
             markerOptions = merge(
@@ -673,9 +684,9 @@ class TreegraphSeries extends TreemapSeries {
             nodeY = node.y = (!reversed ?
                 plotSizeY - y - height / 2 :
                 y - height / 2),
-            borderRadius = pick(
-                point.options.borderRadius,
-                level.borderRadius,
+            borderRadius = (
+                point.options.borderRadius ??
+                level.borderRadius ??
                 this.options.borderRadius
             ),
             symbolFn = symbols[symbol || 'circle'];
@@ -869,6 +880,7 @@ export default TreegraphSeries;
  *     }]
  *  ```
  *
+ * @basic
  * @type      {Array<*>}
  * @extends   series.treemap.data
  * @product   highcharts

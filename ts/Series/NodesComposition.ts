@@ -1,6 +1,5 @@
 /* *
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -30,14 +29,14 @@ const {
         }
     }
 } = SeriesRegistry;
-import U from '../Core/Utilities.js';
-const {
+import {
+    addEvent,
     defined,
     extend,
     find,
-    merge,
-    pick
-} = U;
+    merge
+} from '../Shared/Utilities.js';
+
 
 /* *
  *
@@ -45,14 +44,14 @@ const {
  *
  * */
 
-declare module '../Core/Series/PointLike' {
-    interface PointLike {
+declare module '../Core/Series/PointBase' {
+    interface PointBase {
         name?: string;
     }
 }
 
-declare module '../Core/Series/SeriesLike' {
-    interface SeriesLike {
+declare module '../Core/Series/SeriesBase' {
+    interface SeriesBase {
         nodes?: Array<NodesComposition.PointComposition>;
     }
 }
@@ -150,7 +149,21 @@ namespace NodesComposition {
         seriesProto.destroy = destroy;
         seriesProto.setData = setData;
 
+        addEvent(SeriesClass, 'afterUpdate', afterUpdate);
+
         return SeriesClass as (T&typeof SeriesComposition);
+    }
+
+    /**
+     * Destroy data labels on nodes.
+     * @private
+     */
+    function afterUpdate(this: Series): void {
+        if (!this.hasDataLabels?.() && this.nodes) { // #23385
+            for (const node of this.nodes) {
+                node.destroyElements({ dataLabel: 1 });
+            }
+        }
     }
 
     /**
@@ -247,13 +260,10 @@ namespace NodesComposition {
         // For use in formats
         node.name = node.name || node.options.id || '';
         // Mass is used in networkgraph:
-        node.mass = pick(
-            // Node:
-            node.options.mass,
-            node.options.marker && node.options.marker.radius,
-            // Series:
-            this.options.marker && this.options.marker.radius,
-            // Default:
+        node.mass = (
+            node.options.mass ??
+            (node.options.marker && node.options.marker.radius) ??
+            (this.options.marker && this.options.marker.radius) ??
             4
         );
         return node;
@@ -309,10 +319,9 @@ namespace NodesComposition {
 
                 // Point color defaults to the fromNode's color
                 if (chart.styledMode) {
-                    point.colorIndex = pick(
-                        point.options.colorIndex,
-                        nodeLookup[point.from].colorIndex
-                    );
+                    point.colorIndex =
+                        point.options.colorIndex ??
+                        nodeLookup[point.from].colorIndex;
                 } else {
                     point.color =
                         point.options.color || nodeLookup[point.from].color;
@@ -449,7 +458,7 @@ namespace NodesComposition {
                 this.series.options.nodes = [nodeConfig];
             }
 
-            if (pick(redraw, true)) {
+            if (redraw ?? true) {
                 this.series.chart.redraw(animation);
             }
         }

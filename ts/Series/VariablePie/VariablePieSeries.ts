@@ -2,11 +2,13 @@
  *
  *  Variable Pie module for Highcharts
  *
- *  (c) 2010-2025 Grzegorz Blachliński
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Grzegorz Blachliński
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -25,17 +27,15 @@ import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 const {
     pie: PieSeries
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const {
+import VariablePieSeriesDefaults from './VariablePieSeriesDefaults.js';
+import {
     arrayMax,
     arrayMin,
     clamp,
     extend,
     fireEvent,
-    merge,
-    pick
-} = U;
-import VariablePieSeriesDefaults from './VariablePieSeriesDefaults.js';
+    merge
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -43,8 +43,8 @@ import VariablePieSeriesDefaults from './VariablePieSeriesDefaults.js';
  *
  * */
 
-declare module '../../Core/Series/SeriesLike' {
-    interface SeriesLike {
+declare module '../../Core/Series/SeriesBase' {
+    interface SeriesBase {
         maxPxSize?: number;
         minPxSize?: number;
     }
@@ -110,7 +110,7 @@ class VariablePieSeries extends PieSeries {
             plotHeight = chart.plotHeight,
             seriesOptions = series.options,
             slicingRoom = 2 * (seriesOptions.slicedOffset || 0),
-            zData = series.getColumn('z'),
+            zData = [...this.getColumn('z', false, true)],
             smallestSize = Math.min(plotWidth, plotHeight) - slicingRoom,
             // Min and max size of pie slice:
             extremes: Record<string, number> = {},
@@ -140,14 +140,10 @@ class VariablePieSeries extends PieSeries {
         );
 
         if (zData.length) {
-            zMin = pick(
-                seriesOptions.zMin,
-                arrayMin(zData.filter(series.zValEval))
-            );
-            zMax = pick(
-                seriesOptions.zMax,
-                arrayMax(zData.filter(series.zValEval))
-            );
+            zMin =
+                seriesOptions.zMin ?? arrayMin(zData.filter(series.zValEval));
+            zMax =
+                seriesOptions.zMax ?? arrayMax(zData.filter(series.zValEval));
             this.getRadii(zMin, zMax, series.minPxSize, series.maxPxSize);
         }
     }
@@ -170,7 +166,7 @@ class VariablePieSeries extends PieSeries {
      * @param {number} minSize
      * Minimal pixel size possible for radius.
      *
-     * @param {numbner} maxSize
+     * @param {number} maxSize
      * Minimal pixel size possible for radius.
      */
     public getRadii(
@@ -179,7 +175,7 @@ class VariablePieSeries extends PieSeries {
         minSize: number,
         maxSize: number
     ): void {
-        const zData = this.getColumn('z'),
+        const zData: Array<number> = [...this.getColumn('z', false, true)],
             radii: Array<number> = [],
             options = this.options,
             sizeByArea = options.sizeBy !== 'radius',
@@ -289,10 +285,9 @@ class VariablePieSeries extends PieSeries {
             slicedOffset: number = options.slicedOffset as any,
             startAngle = options.startAngle || 0,
             startAngleRad = Math.PI / 180 * (startAngle - 90),
-            endAngleRad = Math.PI / 180 * (pick(
-                options.endAngle,
-                startAngle + 360
-            ) - 90),
+            endAngleRad = Math.PI / 180 * (
+                (options.endAngle ?? startAngle + 360) - 90
+            ),
             circ = endAngleRad - startAngleRad, // 2 * Math.PI,
             points = series.points,
             ignoreHiddenPoint = options.ignoreHiddenPoint;

@@ -1,12 +1,13 @@
 /* *
  *
- *  (c) 2014-2025 Highsoft AS
+ *  (c) 2014-2026 Highsoft AS
  *
- *  Authors: Jon Arild Nygard / Oystein Moseng
+ *  Authors: Jon Arild Nygård / Øystein Moseng
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -20,24 +21,21 @@ import type {
     AlignValue,
     VerticalAlignValue
 } from '../../Core/Renderer/AlignObject';
-import type BreadcrumbsOptions from '../../Extensions/Breadcrumbs/BreadcrumbsOptions';
 import type ButtonThemeObject from '../../Core/Renderer/SVG/ButtonThemeObject';
 import type ColorString from '../../Core/Color/ColorString';
 import type ColorType from '../../Core/Color/ColorType';
-import type GradientColor from '../../Core/Color/GradientColor';
-import { PatternObject } from '../../Extensions/PatternFill';
 import type DashStyleValue from '../../Core/Renderer/DashStyleValue';
 import type DataLabelOptions from '../../Core/Series/DataLabelOptions';
 import type { PointMarkerOptions } from '../../Core/Series/PointOptions';
-import type ScatterSeriesOptions from '../Scatter/ScatterSeriesOptions';
+import type {
+    ScatterSeriesOptions,
+    ScatterSeriesTooltipOptions
+} from '../Scatter/ScatterSeriesOptions';
 import type {
     SeriesOptions,
-    SeriesStatesOptions,
-    LegendSymbolType
+    SeriesStatesOptions
 } from '../../Core/Series/SeriesOptions';
-import type TooltipOptions from '../../Core/TooltipOptions';
 import type TreemapPointOptions from './TreemapPointOptions';
-import type TreemapSeries from './TreemapSeries';
 import MarkerClusterOptions from '../../Extensions/MarkerClusters/MarkerClusterOptions';
 
 /* *
@@ -45,12 +43,6 @@ import MarkerClusterOptions from '../../Extensions/MarkerClusters/MarkerClusterO
  *  Declarations
  *
  * */
-
-declare module '../../Core/Series/SeriesOptions' {
-    interface SeriesOptions {
-        cropThreshold?: number;
-    }
-}
 
 export interface TreemapDataLabelOptions extends DataLabelOptions {
     /**
@@ -92,7 +84,6 @@ export type TreemapSeriesLayoutStartingDirectionValue = (
  *         Treegraph nodes with color variation
  *
  * @since 6.0.0
- *
  * @product highcharts
  */
 export interface TreemapSeriesLevelColorVariationOptions {
@@ -100,12 +91,8 @@ export interface TreemapSeriesLevelColorVariationOptions {
     /**
      * The key of a color variation. Currently supports `brightness` only.
      *
-     * @type {string}
-     *
      * @since 6.0.0
-     *
      * @product highcharts
-     *
      * @validvalue ["brightness"]
      */
     key?: string;
@@ -114,10 +101,7 @@ export interface TreemapSeriesLevelColorVariationOptions {
      * The ending value of a color variation. The last sibling will receive
      * this value.
      *
-     * @type {number}
-     *
      * @since 6.0.0
-     *
      * @product highcharts
      */
     to?: number;
@@ -137,10 +121,10 @@ export interface TreemapSeriesClusterOptions extends MarkerClusterOptions {
      * Individual color for the grouped point. By default the color is pulled
      * from the parent color.
      *
-     * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+     * @type      {Highcharts.ColorType}
      * @product   highcharts
      */
-    color?: ColorString|GradientColor|PatternObject;
+    color?: ColorType;
 
     /**
      * Enable or disable Treemap grouping.
@@ -256,7 +240,7 @@ export interface TreemapSeriesLevelOptions extends Omit<SeriesOptions, ('data'|'
     /**
      * Can set a color on all points which lies on the same level.
      *
-     * @type {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+     * @type {Highcharts.ColorType}
      *
      * @since 4.1.0
      *
@@ -301,6 +285,17 @@ export interface TreemapSeriesLevelOptions extends Omit<SeriesOptions, ('data'|'
     dataLabels?: Partial<TreemapDataLabelOptions>;
 
     /**
+     * Can set the groupPadding on all points which lies on the same level.
+     * See also the `nodeSizeBy` option that controls how the leaf nodes'
+     * size is affected by the padding.
+     *
+     * @since 12.2.0
+     *
+     * @product highcharts
+     */
+    groupPadding?: number;
+
+    /**
      * Can set the layoutAlgorithm option on a specific level.
      *
      * @since 4.1.0
@@ -334,6 +329,16 @@ export interface TreemapSeriesLevelOptions extends Omit<SeriesOptions, ('data'|'
      * @product highcharts
      */
     level?: number;
+
+    /**
+     * Used together with the levels and allowTraversingTree options. When
+     * set to false the first level visible to be level one, which is
+     * dynamic when traversing the tree. Otherwise the level will be the
+     * same as the tree structure.
+     *
+     * @since 4.1.0
+     */
+    levelIsConstant?: boolean;
 
 }
 
@@ -371,7 +376,7 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
      * @sample {highcharts} highcharts/plotoptions/treemap-allowdrilltonode/
      *         Enabled
      *
-     * @deprecated
+     * @deprecated 7.0.3
      *
      * @type {boolean}
      *
@@ -425,18 +430,6 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
      */
     borderWidth?: number;
 
-    /**
-     * Options for the breadcrumbs, the navigation at the top leading the
-     * way up through the traversed levels.
-     *
-     * @since 10.0.0
-     *
-     * @product highcharts
-     *
-     * @extends navigation.breadcrumbs
-     */
-    breadcrumbs?: BreadcrumbsOptions;
-
     brightness?: number;
 
     /**
@@ -459,7 +452,7 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
      * of the global [colors](#colors) when
      * [colorByPoint](#plotOptions.treemap.colorByPoint) is true.
      *
-     * @type {Array<Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject>}
+     * @type {Array<Highcharts.ColorType>}
      *
      * @since 3.0
      *
@@ -469,7 +462,7 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
 
     /**
      * When the series contains less points than the crop threshold, all
-     * points are drawn, event if the points fall outside the visible plot
+     * points are drawn, even if the points fall outside the visible plot
      * area at the current zoom. The advantage of drawing all points
      * (including markers and columns), is that animation is performed on
      * updates. On the other hand, when the series contains more points than
@@ -631,7 +624,10 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
      */
     layoutStartingDirection?: TreemapSeriesLayoutStartingDirectionValue;
 
-    legendSymbol?: LegendSymbolType;
+    /**
+     * @default 'rectangle'
+     */
+    legendSymbol?: ScatterSeriesOptions['legendSymbol'];
 
     /**
      * Used together with the levels and allowTraversingTree options. When
@@ -723,7 +719,7 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
      *
      * @extends plotOptions.heatmap.states
      */
-    states?: SeriesStatesOptions<TreemapSeries>;
+    states?: SeriesStatesOptions<TreemapSeriesOptions>;
 
     /**
      * Options for the hovered series
@@ -735,7 +731,7 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
      * @apioption series.treemap.states.hover
      */
 
-    tooltip?:Partial<TooltipOptions>;
+    tooltip?: TreemapSeriesTooltipOptions;
 
     /**
      * The HTML of the grouped nodes point's in the tooltip. Works only for
@@ -758,6 +754,24 @@ export interface TreemapSeriesOptions extends ScatterSeriesOptions {
     traverseUpButton?: TreemapSeriesUpButtonOptions;
 
     traverseToLeaf?: boolean;
+}
+
+export interface TreemapSeriesTooltipOptions
+    extends ScatterSeriesTooltipOptions {
+    /**
+     * @default ''
+     */
+    headerFormat?: ScatterSeriesTooltipOptions['headerFormat'];
+
+    /**
+     * @default '<b>{point.name}</b>: {point.value}<br/>'
+     */
+    pointFormat?: ScatterSeriesTooltipOptions['pointFormat'];
+
+    /**
+     * @default '+ {point.groupedPointsAmount} more...<br/>'
+     */
+    clusterFormat?: ScatterSeriesTooltipOptions['clusterFormat'];
 }
 
 /**

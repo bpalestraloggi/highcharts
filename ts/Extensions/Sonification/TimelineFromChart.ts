@@ -1,12 +1,14 @@
 /* *
  *
- *  (c) 2009-2025 Øystein Moseng
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Øystein Moseng
  *
  *  Build a timeline from a chart.
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -19,33 +21,36 @@ import type TimelineChannel from './TimelineChannel';
 import SonificationTimeline from './SonificationTimeline.js';
 import SonificationInstrument from './SonificationInstrument.js';
 import SonificationSpeaker from './SonificationSpeaker.js';
-import U from '../../Core/Utilities.js';
-const {
+import T from '../../Core/Templating.js';
+import {
     clamp,
     defined,
     extend,
     getNestedProperty,
-    merge,
-    pick
-} = U;
-import T from '../../Core/Templating.js';
+    merge
+} from '../../Shared/Utilities.js';
 const {
     format
 } = T;
 
+/** @internal */
 interface PointGroupItem {
     point: Point;
     time: number;
 }
+/** @internal */
 interface PropExtremes {
     max: number;
     min: number;
 }
+/** @internal */
 type PropExtremesCache = Record<string, PropExtremes>;
+/** @internal */
 interface ExtremesCache {
     globalExtremes: PropExtremesCache;
     seriesExtremes: Array<PropExtremesCache>;
 }
+/** @internal */
 export interface PropMetrics extends ExtremesCache {
     seriesTimeProps: Array<Record<string, boolean>>;
 }
@@ -56,7 +61,7 @@ const isNoteDefinition = (str: string): boolean =>
 
 /**
  * Get the value of a point property from string.
- * @private
+ * @internal
  */
 function getPointPropValue(point: Point, prop?: string): number|undefined {
     let ret;
@@ -74,7 +79,7 @@ function getPointPropValue(point: Point, prop?: string): number|undefined {
 /**
  * Get chart wide min/max for a set of props, as well as per
  * series min/max for selected props.
- * @private
+ * @internal
  */
 function getChartExtremesForProps(
     chart: Chart,
@@ -139,7 +144,7 @@ function getChartExtremesForProps(
 /**
  * Build a cache of prop extremes for the chart. Goes through
  * options to find out which props are needed.
- * @private
+ * @internal
  */
 function getPropMetrics(chart: Chart): PropMetrics {
     type MappingOpts = Sonification.InstrumentTrackMappingOptions|
@@ -284,7 +289,7 @@ function getPropMetrics(chart: Chart): PropMetrics {
 
 /**
  * Map a relative value onto a virtual axis.
- * @private
+ * @internal
  */
 function mapToVirtualAxis(
     value: number,
@@ -331,7 +336,7 @@ function mapToVirtualAxis(
 
 /**
  * Get the value of a mapped parameter for a point.
- * @private
+ * @internal
  */
 function getMappingParameterValue(
     context: Sonification.TimelineEventContext,
@@ -357,8 +362,8 @@ function getMappingParameterValue(
     if (typeof mappingOptions === 'object') {
         mapTo = mappingOptions.mapTo;
         mapFunc = mappingOptions.mapFunction || mapFunc;
-        min = pick(mappingOptions.min, min);
-        max = pick(mappingOptions.max, max);
+        min = (mappingOptions.min ?? min);
+        max = (mappingOptions.max ?? max);
         within = mappingOptions.within || defaultMapping.within;
         scale = (
             mappingOptions as Sonification.PitchMappingParameterOptions
@@ -455,7 +460,7 @@ function getMappingParameterValue(
 
 /**
  * Get mapping parameter value with defined fallback and defaults.
- * @private
+ * @internal
  */
 function getParamValWithDefault(
     context: Sonification.TimelineEventContext,
@@ -466,7 +471,7 @@ function getParamValWithDefault(
     defaults?: Partial<Sonification.MappingParameterOptions>,
     contextValueProp?: string
 ): number {
-    return pick(getMappingParameterValue(
+    return (getMappingParameterValue(
         context,
         propMetrics,
         useSeriesExtremes,
@@ -477,13 +482,13 @@ function getParamValWithDefault(
         ),
         mappingParamOptions,
         contextValueProp
-    ), fallback);
+    ) ?? fallback);
 }
 
 
 /**
  * Get time value for a point event.
- * @private
+ * @internal
  */
 function getPointTime(
     point: Point,
@@ -504,7 +509,7 @@ function getPointTime(
 
 /**
  * Get duration for a series
- * @private
+ * @internal
  */
 function getAvailableDurationForSeries(
     series: Series,
@@ -557,7 +562,7 @@ function getAvailableDurationForSeries(
 
 /**
  * Build and add a track to the timeline.
- * @private
+ * @internal
  */
 function addTimelineChannelFromTrack(
     timeline: SonificationTimeline,
@@ -593,14 +598,15 @@ function addTimelineChannelFromTrack(
 
     return timeline.addChannel(
         options.type || 'instrument', engine,
-        pick(options.showPlayMarker, true)
+        (options.showPlayMarker ?? true
+        )
     );
 }
 
 
 /**
  * Add event from a point to a mapped instrument track.
- * @private
+ * @internal
  */
 function addMappedInstrumentEvent(
     context: Sonification.TimelineEventContext,
@@ -733,7 +739,7 @@ function addMappedInstrumentEvent(
 
 /**
  * Get the message value to speak for a point.
- * @private
+ * @internal
  */
 function getSpeechMessageValue(
     context: Sonification.TimelineEventContext,
@@ -751,7 +757,7 @@ function getSpeechMessageValue(
 
 /**
  * Add an event from a point to a mapped speech track.
- * @private
+ * @internal
  */
 function addMappedSpeechEvent(
     context: Sonification.TimelineEventContext,
@@ -793,7 +799,7 @@ function addMappedSpeechEvent(
 
 /**
  * Add events to a channel for a point&track combo.
- * @private
+ * @internal
  */
 function addMappedEventForPoint(
     context: Sonification.TimelineEventContext,
@@ -819,10 +825,8 @@ function addMappedEventForPoint(
             context, channel, trackOptions.mapping as
             Sonification.InstrumentTrackMappingOptions,
             propMetrics,
-            pick(
-                (trackOptions as Sonification.InstrumentTrackOptions)
-                    .roundToMusicalNotes,
-                true
+            ((trackOptions as Sonification.InstrumentTrackOptions)
+                .roundToMusicalNotes ?? true
             ));
     }
     return eventsAdded;
@@ -831,7 +835,7 @@ function addMappedEventForPoint(
 
 /**
  * Get a reduced set of points from a list, depending on grouping opts.
- * @private
+ * @internal
  */
 function getGroupedPoints(
     pointGroupOpts: Sonification.PointGroupingOptions,
@@ -889,7 +893,7 @@ function getGroupedPoints(
 
 /**
  * Should a track be active for this event?
- * @private
+ * @internal
  */
 function isActive(
     context: Sonification.TimelineEventContext,
@@ -902,8 +906,7 @@ function isActive(
     }
     if (typeof activeWhen === 'object') {
         const prop = activeWhen.prop,
-            val = pick(
-                context.value,
+            val = context.value ?? (
                 context.point && getPointPropValue(context.point, prop)
             );
         if (typeof val !== 'number') {
@@ -931,8 +934,8 @@ function isActive(
             );
         }
 
-        const max = pick(activeWhen.max, Infinity),
-            min = pick(activeWhen.min, -Infinity);
+        const max = (activeWhen.max ?? Infinity),
+            min = (activeWhen.min ?? -Infinity);
 
         return val <= max && val >= min && crossingOk;
     }
@@ -942,7 +945,7 @@ function isActive(
 
 /**
  * Build a new timeline object from a chart.
- * @private
+ * @internal
  */
 function timelineFromChart(
     audioContext: AudioContext,
@@ -1187,7 +1190,7 @@ function timelineFromChart(
                             addMappedInstrumentEvent(
                                 { time, value },
                                 contextChannel, mergedOpts.mapping, propMetrics,
-                                pick(mergedOpts.roundToMusicalNotes, true),
+                                (mergedOpts.roundToMusicalNotes ?? true),
                                 valueProp
                             );
                         }
@@ -1234,4 +1237,5 @@ function timelineFromChart(
  *
  * */
 
+/** @internal */
 export default timelineFromChart;

@@ -412,6 +412,26 @@ QUnit.test('Date objects as X values, column', function (assert) {
         changeStackingType();
         changeStackingType();
         changeStackingType();
+
+
+        chart.update({
+            yAxis: {
+                stackLabels: {
+                    formatter: ctx => (ctx && 'STACKED') || ''
+                }
+            }
+        });
+
+        assert.strictEqual(
+            chart
+                .series[0]
+                .yAxis
+                .stacking
+                .stacks['column,Baseline Marty,,']['0']
+                .label.textStr,
+            'STACKED',
+            'Arrow-function formatter should receive arguments.'
+        );
     });
 
     QUnit.test('#6546 - stacking with gapSize', function (assert) {
@@ -643,7 +663,8 @@ QUnit.test('Date objects as X values, column', function (assert) {
         });
 
         const series = chart.series[1],
-            datalabelY = series.points[0].dataLabel.y + series.xAxis.top,
+            datalabelY = series.points[0].dataLabel.y + series.xAxis.top -
+                series.points[0].dataLabel.options.distance,
             label = series.yAxis.stacking
                 .stacks[series.stackKey][0].label,
             stacklabelY = label.y + chart.plotTop;
@@ -765,5 +786,32 @@ QUnit.test('Date objects as X values, column', function (assert) {
                 `Enabling centerInCategory and setting reversedStacks to false
                 should not affect the stack order.`
             );
-        });
+        }
+    );
+
+
+    QUnit.test(
+        'Disable stacking via null flag, #19033',
+        function (assert) {
+            const chart = Highcharts.chart('container', {
+                chart: {
+                    type: 'column'
+                },
+                plotOptions: {
+                    series: {
+                        stacking: null
+                    }
+                },
+                series: [{
+                    data: [1, 2, 3]
+                }]
+            });
+
+            assert.strictEqual(
+                chart.series[0].options.stacking,
+                null,
+                'Stacking should be "disabled" when set null in options.'
+            );
+        }
+    );
 }());

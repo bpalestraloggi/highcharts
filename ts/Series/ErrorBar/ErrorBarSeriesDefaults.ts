@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -17,8 +19,6 @@
  * */
 
 import type ErrorBarSeriesOptions from './ErrorBarSeriesOptions';
-
-import { Palette } from '../../Core/Color/Palettes.js';
 
 /* *
  *
@@ -39,7 +39,7 @@ import { Palette } from '../../Core/Color/Palettes.js';
  *         Error bars with data labels
  *
  * @extends      plotOptions.boxplot
- * @excluding    boostBlending, boostThreshold
+ * @excluding    borderRadius, boostBlending, boostThreshold
  * @product      highcharts
  * @requires     highcharts-more
  * @optionparent plotOptions.errorbar
@@ -53,12 +53,28 @@ const ErrorBarSeriesDefaults: ErrorBarSeriesOptions = {
      * @sample {highcharts} highcharts/plotoptions/error-bar-styling/
      *         Error bar styling
      *
-     * @type    {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
-     * @default #000000
+     * @type    {Highcharts.ColorType}
      * @since   3.0
      * @product highcharts
      */
-    color: Palette.neutralColor100,
+    color: 'var(--highcharts-neutral-color-100)',
+
+    dataLabels: {
+
+        /**
+         * Callback JavaScript function to format the data label. Note that if
+         * a `format` is defined, the format takes precedence and the formatter
+         * is ignored.
+         *
+         * The default formatter renders the value of the point key the label
+         * is [aligned to](#plotOptions.errorbar.dataLabels.alignToKey). Define
+         * a [format](#plotOptions.errorbar.dataLabels.format) or `formatter`
+         * to display other values.
+         *
+         * @type {Highcharts.DataLabelsFormatterCallbackFunction}
+         */
+
+    },
 
     grouping: false,
 
@@ -152,6 +168,7 @@ const ErrorBarSeriesDefaults: ErrorBarSeriesOptions = {
  * @sample {highcharts} highcharts/series/data-array-of-objects/
  *         Config objects
  *
+ * @basic
  * @type      {Array<Array<(number|string),number>|Array<(number|string),number,number>|*>}
  * @extends   series.arearange.data
  * @excluding dataLabels, drilldown, marker, states

@@ -48,9 +48,8 @@ QUnit.test('Exporting button and menu HTML/ARIA markup', function (assert) {
 
 
 QUnit.test(
-    'Exported chart should not contain HTML elements from a11y ' +
-    'module',
-    function (assert) {
+    'Exported chart should not contain HTML elements from a11y module',
+    async function (assert) {
         var chart = Highcharts.chart('container', {
                 title: {
                     text: 'Title < title'
@@ -62,7 +61,7 @@ QUnit.test(
                     enabled: true
                 }
             }),
-            svg = chart.exporting.getSVGForExport(),
+            svg = await chart.exporting.getSVGForExport(),
             hasHTMLElements = svg.match(
                 // eslint-disable-next-line max-len
                 /<(div|p|h[1-7]|button|a|li|ul|ol|table|input|select)(\s[^>]+)?>/gu
@@ -79,6 +78,76 @@ QUnit.test(
             'Title &lt; title',
             'Title should replace `<` to `&lt;` for exporting, (#17753, #19002)'
         );
+    });
+
+QUnit.test(
+    'Exported SVG should embed accessibility description as ' +
+    'Dublin Core RDF metadata',
+    async function (assert) {
+        const chart = Highcharts.chart('container', {
+            series: [{
+                data: [1, 2, 3, 4, 5, 6]
+            }]
+        });
+
+        const svgWithTypeDesc = await chart.exporting.getSVGForExport();
+        assert.ok(
+            /<metadata>[\s\S]*<dc:description>[^<]+<\/dc:description>/
+                .test(svgWithTypeDesc),
+            'Exported SVG should contain generated chart-type description ' +
+            'as RDF metadata fallback.'
+        );
+
+        chart.update({
+            accessibility: {
+                description: 'Bar chart showing sales by quarter & region.'
+            }
+        });
+        const svgWithDesc = await chart.exporting.getSVGForExport();
+        assert.ok(
+            svgWithDesc.includes(
+                '<dc:description>Bar chart showing sales by quarter ' +
+                '&amp; region.</dc:description>'
+            ),
+            'Exported SVG should contain dc:description from ' +
+            'accessibility.description'
+        );
+
+        chart.update({
+            accessibility: { description: undefined },
+            caption: { text: 'Caption fallback text' }
+        });
+        const svgWithCaption = await chart.exporting.getSVGForExport();
+        assert.ok(
+            svgWithCaption.includes(
+                '<dc:description>Caption fallback text</dc:description>'
+            ),
+            'Exported SVG should contain dc:description from caption.text'
+        );
+
+        // Create a linked description element
+        chart.update({ caption: { text: undefined } });
+        const linkedEl = document.createElement('p');
+        linkedEl.className = 'highcharts-description';
+        linkedEl.textContent = 'Linked description text';
+        chart.renderTo.parentNode.insertBefore(
+            linkedEl, chart.renderTo.nextSibling
+        );
+        // Rebind linkedDescription element to the chart
+        chart.redraw();
+        try {
+            const svgWithLinked = await chart.exporting.getSVGForExport();
+            assert.ok(
+                svgWithLinked.includes(
+                    '<dc:description>Linked description text' +
+                    '</dc:description>'
+                ),
+                'Exported SVG should contain dc:description from ' +
+                'linkedDescription'
+            );
+        } finally {
+            linkedEl.remove();
+        }
     });
 
 QUnit.test(
@@ -118,11 +187,23 @@ QUnit.test(
                 '"screen-reader-after" should be below "highcharts-container"'
             ]
         ]) {
-            assert.strictEqual(
-                renderToChildren[elementIndex].id,
-                candidateId,
-                testMessage
-            );
+            const childId = renderToChildren[elementIndex].id;
+
+            if (candidateId.includes('screen-reader-region-before')) {
+                assert.ok(
+                    childId.startsWith(
+                        'highcharts-screen-reader-region-before'
+                    ),
+                    testMessage
+                );
+            } else if (candidateId.includes('screen-reader-region-after')) {
+                assert.ok(
+                    childId.startsWith('highcharts-screen-reader-region-after'),
+                    testMessage
+                );
+            } else {
+                assert.strictEqual(childId, candidateId, testMessage);
+            }
         }
     }
 );

@@ -2,11 +2,13 @@
  *
  *  Popup generator for Stock tools
  *
- *  (c) 2009-2025 Sebastian Bochan
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Sebastian Bochan
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -28,15 +30,16 @@ const {
     doc,
     isFirefox
 } = H;
-import U from '../../../Core/Utilities.js';
-const {
+import BaseFormIcons from '../../../Shared/BaseFormIcons.js';
+import getIcon from '../../../Shared/BaseFormUtils.js';
+
+import {
     createElement,
     isArray,
     isObject,
     objectEach,
-    pick,
     stableSort
-} = U;
+} from '../../../Shared/Utilities.js';
 
 /* *
  *
@@ -47,7 +50,8 @@ const {
 /**
  * Create annotation simple form.
  * It contains fields with param names.
- * @private
+ *
+ * @internal
  * @param {Highcharts.Chart} chart
  * Chart
  * @param {Object} options
@@ -127,10 +131,14 @@ function addForm(
 /**
  * Create annotation simple form. It contains two buttons
  * (edit / remove) and text label.
- * @private
- * @param {Highcharts.Chart} - chart
- * @param {Highcharts.AnnotationsOptions} - options
- * @param {Function} - on click callback
+ *
+ * @internal
+ * @param {Highcharts.Chart} chart
+ *        The Chart instance
+ * @param {Highcharts.AnnotationsOptions} options
+ *        Annotation options
+ * @param {Function} callback
+ *        On click callback
  */
 function addToolbar(
     this: Popup,
@@ -165,11 +173,9 @@ function addToolbar(
     label.setAttribute('aria-label', 'Annotation type');
     label.appendChild(
         doc.createTextNode(
-            pick(
-                // Advanced annotations:
-                lang[options.langKey as any] || options.langKey,
-                // Basic shapes:
-                options.shapes && options.shapes[0].type,
+            (
+                (lang[options.langKey as any] || options.langKey) ??
+                (options.shapes && options.shapes[0].type) ??
                 ''
             )
         )
@@ -197,7 +203,7 @@ function addToolbar(
     createElement('span', {
         className: 'highcharts-icon'
     }, {
-        backgroundImage: `url(${this.iconsURL}edit.svg)`
+        backgroundImage: getIcon('edit.svg', this.iconsURL, BaseFormIcons)
     }, button);
 
     button = this.addButton(
@@ -212,13 +218,14 @@ function addToolbar(
     createElement('span', {
         className: 'highcharts-icon'
     }, {
-        backgroundImage: `url(${this.iconsURL}destroy.svg)`
+        backgroundImage: getIcon('destroy.svg', this.iconsURL, BaseFormIcons)
     }, button);
 }
 
 /**
  * Create annotation's form fields.
- * @private
+ *
+ * @internal
  * @param {Highcharts.HTMLDOMElement} parentDiv
  * Div where inputs are placed
  * @param {Highcharts.Chart} chart
@@ -334,9 +341,11 @@ function addFormFields(
  *
  * */
 
+/** @internal */
 const PopupAnnotations = {
     addForm,
     addToolbar
 };
 
+/** @internal */
 export default PopupAnnotations;

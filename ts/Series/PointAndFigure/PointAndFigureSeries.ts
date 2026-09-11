@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Kamil Musialowski
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Kamil Musiałowski
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -15,10 +17,11 @@
  *
  * */
 
+import DataTableCore from '../../Data/DataTableCore.js';
 import PointAndFigurePoint from './PointAndFigurePoint.js';
 import PointAndFigureSeriesDefaults from './PointAndFigureSeriesDefaults.js';
 import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
-import PointAndFigureSymbols from './PointAndFigureSymbols.js';
+import CrossSymbol from '../CrossSymbol.js';
 
 import type Point from '../../Core/Series/Point.js';
 import type SVGAttributes from '../../Core/Renderer/SVG/SVGAttributes.js';
@@ -26,8 +29,14 @@ import type PointAndFigureSeriesOptions from './PointAndFigureSeriesOptions';
 import type SVGRenderer from '../../Core/Renderer/SVG/SVGRenderer.js';
 
 import H from '../../Core/Globals.js';
-import U from '../../Core/Utilities.js';
 import Series from '../../Core/Series/Series.js';
+import {
+    extend,
+    isNumber,
+    merge,
+    pushUnique,
+    relativeLength
+} from '../../Shared/Utilities.js';
 const { composed } = H;
 const {
     scatter: ScatterSeries,
@@ -35,13 +44,6 @@ const {
         prototype: columnProto
     }
 } = SeriesRegistry.seriesTypes;
-const {
-    extend,
-    merge,
-    pushUnique,
-    isNumber,
-    relativeLength
-} = U;
 
 
 /* *
@@ -96,7 +98,7 @@ class PointAndFigureSeries extends ScatterSeries {
         SVGRendererClass: typeof SVGRenderer
     ): void {
         if (pushUnique(composed, 'pointandfigure')) {
-            PointAndFigureSymbols.compose(SVGRendererClass);
+            CrossSymbol.compose(SVGRendererClass);
         }
     }
 
@@ -131,7 +133,7 @@ class PointAndFigureSeries extends ScatterSeries {
     public getProcessedData(): Series.ProcessedDataObject {
         if (!this.pnfDataGroups) {
             return {
-                modified: this.dataTable.modified,
+                modified: this.dataTable.getModified(),
                 cropped: false,
                 cropStart: 0,
                 closestPointRange: 1
@@ -139,7 +141,6 @@ class PointAndFigureSeries extends ScatterSeries {
         }
 
         const series = this,
-            modified = this.dataTable.modified,
             options = series.options,
             xData = series.getColumn('x', true),
             yData = series.getColumn('y', true),
@@ -147,7 +148,11 @@ class PointAndFigureSeries extends ScatterSeries {
             calculatedBoxSize = isNumber(boxSize) ?
                 boxSize : relativeLength(boxSize, yData[0]),
             pnfDataGroups = series.pnfDataGroups,
-            reversal = calculatedBoxSize * options.reversalAmount;
+            reversal = calculatedBoxSize * options.reversalAmount,
+            dataTable = this.dataTable.getModified(),
+            modified = dataTable === this.dataTable ?
+                dataTable :
+                new DataTableCore();
 
         series.calculatedBoxSize = calculatedBoxSize;
 
@@ -247,6 +252,7 @@ class PointAndFigureSeries extends ScatterSeries {
 
         const processedXData: number[] = [];
         const processedYData: number[] = [];
+        const processedUpTrendData: boolean[] = [];
 
         pnfDataGroups.forEach((point): void => {
             const x = point.x,
@@ -255,6 +261,7 @@ class PointAndFigureSeries extends ScatterSeries {
             point.y.forEach((y): void => {
                 processedXData.push(x);
                 processedYData.push(y);
+                processedUpTrendData.push(upTrend);
                 finalData.push({
                     x,
                     y,
@@ -264,8 +271,9 @@ class PointAndFigureSeries extends ScatterSeries {
         });
         modified.setColumn('x', processedXData);
         modified.setColumn('y', processedYData);
+        modified.setColumn('upTrend', processedUpTrendData);
         series.pnfDataGroups = pnfDataGroups;
-        series.processedData = finalData;
+        series.hasProcessedDataTable = true;
 
         return {
             modified,

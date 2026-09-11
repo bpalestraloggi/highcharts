@@ -1,12 +1,14 @@
 /* *
  *
- *  (c) 2009-2025 Øystein Moseng
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Øystein Moseng
  *
- *  Place desriptions on a series and its points.
+ *  Place descriptions on a series and its points.
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -47,14 +49,12 @@ const {
     reverseChildNodes,
     stripHTMLTagsFromString: stripHTMLTags
 } = HTMLUtilities;
-import U from '../../../Core/Utilities.js';
-const {
+import {
+    defined,
     find,
-    isNumber,
     isString,
-    pick,
-    defined
-} = U;
+    isNumber
+} from '../../../Shared/Utilities.js';
 
 
 /* *
@@ -63,8 +63,8 @@ const {
  *
  * */
 
-declare module '../../../Core/Series/PointLike' {
-    interface PointLike {
+declare module '../../../Core/Series/PointBase' {
+    interface PointBase {
         /** @requires modules/accessibility */
         hasMockGraphic?: boolean;
     }
@@ -76,9 +76,6 @@ declare module '../../../Core/Series/PointLike' {
  *  Functions
  *
  * */
-
-/* eslint-disable valid-jsdoc */
-
 
 /**
  * @private
@@ -161,11 +158,11 @@ function addMockPointElement(
             firstGraphic.parentGroup :
             series.graph || series.group,
         mockPos = firstPointWithGraphic ? {
-            x: pick(point.plotX, firstPointWithGraphic.plotX, 0),
-            y: pick(point.plotY, firstPointWithGraphic.plotY, 0)
+            x: (point.plotX ?? firstPointWithGraphic.plotX ?? 0),
+            y: (point.plotY ?? firstPointWithGraphic.plotY ?? 0)
         } : {
-            x: pick(point.plotX, 0),
-            y: pick(point.plotY, 0)
+            x: (point.plotX ?? 0),
+            y: (point.plotY ?? 0)
         },
         mockElement = makeMockElement(point, mockPos);
 
@@ -350,7 +347,7 @@ function getPointA11yTimeDescription(
             ),
             dateFormat = seriesA11yOptions.dateFormatter &&
                 seriesA11yOptions.dateFormatter(point) ||
-                a11yOptions.dateFormatter && a11yOptions.dateFormatter(point) ||
+                a11yOptions.dateFormatter?.(point) ||
                 seriesA11yOptions.dateFormat ||
                 a11yOptions.dateFormat ||
                 tooltipDateFormat;
@@ -392,7 +389,8 @@ function getPointArrayMapValueDescription(
         keyToValStr = function (key: string): string|undefined {
             const num = pointNumberToString(
                 point,
-                pick((point as any)[key], (point.options as any)[key])
+                ((point as any)[key] ?? (point.options as any)[key]
+                )
             );
             return num !== void 0 ?
                 key + ': ' + pre + num + suf :
@@ -487,11 +485,13 @@ function getPointValueDescription(
             seriesA11yOptions.point.valueDescriptionFormat,
         pointValueDescriptionFormat = seriesValueDescFormat ||
             chart.options.accessibility.point.valueDescriptionFormat,
-        showXDescription = pick(
-            series.xAxis &&
-            series.xAxis.options.accessibility &&
-            series.xAxis.options.accessibility.enabled,
-            !chart.angular && series.type !== 'flowmap'
+        showXDescription = (
+            (
+                series.xAxis &&
+                series.xAxis.options.accessibility &&
+                series.xAxis.options.accessibility.enabled
+            ) ??
+            (!chart.angular && series.type !== 'flowmap')
         ),
         xDesc = showXDescription ? getPointXDescription(point) : '',
         context = {
@@ -656,10 +656,10 @@ function defaultSeriesDescriptionFormatter(
         ) + (
             shouldDescribeAxis('xAxis') ? ' ' + xAxisInfo + '.' : ''
         ),
-        formatStr = pick(
-            series.options.accessibility &&
-                series.options.accessibility.descriptionFormat,
-            chart.options.accessibility.series.descriptionFormat,
+        formatStr = (
+            (series.options.accessibility &&
+                series.options.accessibility.descriptionFormat) ??
+            chart.options.accessibility.series.descriptionFormat ??
             ''
         );
 

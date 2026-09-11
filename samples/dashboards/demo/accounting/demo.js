@@ -21,10 +21,8 @@ const commonGaugeOptions = {
     },
     pane: {
         startAngle: -90,
-        endAngle: 89.9,
-        background: null,
-        center: ['50%', '64%'],
-        size: '110%'
+        endAngle: 90,
+        background: null
     },
     yAxis: {
         visible: true,
@@ -94,36 +92,34 @@ const board = Dashboards.board('container', {
         connectors: [{
             type: 'CSV',
             id: 'data',
-            options: {
-                csv: document.getElementById('csv').innerHTML,
-                dataModifier: {
-                    type: 'Math',
-                    columnFormulas: [{
-                        column: 'Result', // I
-                        formula: 'D1-C1'
-                    }, {
-                        column: 'AccResult', // J
-                        formula: 'SUM(I$1:I1)'
-                    }, {
-                        column: 'CostPredA', // K
-                        formula: 'AVERAGE(E1,G1)'
-                    }, {
-                        column: 'RevPredA', // L
-                        formula: 'AVERAGE(F1, H1)'
-                    }, {
-                        column: 'AccResPredP', // M
-                        formula: 'J1+SUM(F$1:F1)-SUM(E$1:E1)'
-                    }, {
-                        column: 'AccResPredO', // N
-                        formula: 'J1+SUM(H$1:H1)-SUM(G$1:G1)'
-                    }, {
-                        column: 'ResPredA', // O
-                        formula: 'L1-K1'
-                    }, {
-                        column: 'AccResPredA', // P
-                        formula: 'J1+SUM(O$1:O1)'
-                    }]
-                }
+            csv: document.getElementById('csv').innerHTML,
+            dataModifier: {
+                type: 'Math',
+                columnFormulas: [{
+                    column: 'Result', // I
+                    formula: 'D1-C1'
+                }, {
+                    column: 'AccResult', // J
+                    formula: 'SUM(I$1:I1)'
+                }, {
+                    column: 'CostPredA', // K
+                    formula: 'AVERAGE(E1,G1)'
+                }, {
+                    column: 'RevPredA', // L
+                    formula: 'AVERAGE(F1, H1)'
+                }, {
+                    column: 'AccResPredP', // M
+                    formula: 'J1+SUM(F$1:F1)-SUM(E$1:E1)'
+                }, {
+                    column: 'AccResPredO', // N
+                    formula: 'J1+SUM(H$1:H1)-SUM(G$1:G1)'
+                }, {
+                    column: 'ResPredA', // O
+                    formula: 'L1-K1'
+                }, {
+                    column: 'AccResPredA', // P
+                    formula: 'J1+SUM(O$1:O1)'
+                }]
             }
         }]
     },
@@ -474,7 +470,7 @@ const board = Dashboards.board('container', {
 }, true);
 
 board.then(res => {
-    const table = res.dataPool.connectors.data.table.modified.columns;
+    const table = res.dataPool.connectors.data.getTable().getModified().columns;
 
     const revKPI = res.mountedComponents[0].component;
     const revForecast = res.mountedComponents[1].component;

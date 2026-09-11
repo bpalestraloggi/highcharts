@@ -75,6 +75,44 @@ QUnit.test('RangeSelector update', function (assert) {
         before,
         '#14856: It should not leak chart event listeners on update'
     );
+
+    assert.strictEqual(
+        chart.rangeSelector.group.attr('text-align'),
+        0,
+        'Range selector group should not have text-align attr set, #22698.'
+    );
+
+    chart.update({
+        chart: {
+            width: 600
+        },
+        rangeSelector: {
+            allButtonsEnabled: true,
+            buttonTheme: {
+                style: {
+                    color: 'rgb(255, 0, 255)'
+                }
+            }
+        }
+    });
+
+    const buttonColors = chart.rangeSelector.buttons.map(
+        btn => btn.text.element.style.fill
+    );
+
+    assert.deepEqual(
+        buttonColors,
+        [
+            'rgb(255, 0, 255)',
+            'rgb(255, 0, 255)',
+            'rgb(255, 0, 255)',
+            'var(--highcharts-neutral-color-100)',
+            'rgb(255, 0, 255)',
+            'rgb(255, 0, 255)'
+        ],
+        `All active range selector buttons color should be updated, except for
+        the selected one, #23125.`
+    );
 });
 
 QUnit.test('RangeSelector update hover', function (assert) {
@@ -91,7 +129,7 @@ QUnit.test('RangeSelector update hover', function (assert) {
 
     assert.strictEqual(
         chart.rangeSelector.buttons[1].fill,
-        '#e6e6e6',
+        'var(--highcharts-neutral-color-10)',
         'Color of the button should be correct'
     );
 });

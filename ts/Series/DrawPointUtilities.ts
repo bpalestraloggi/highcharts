@@ -1,6 +1,5 @@
 /* *
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -25,6 +24,7 @@ import type SVGRenderer from '../Core/Renderer/SVG/SVGRenderer';
  *
  * */
 
+/** @internal */
 export interface DrawPointParams {
     animatableAttribs: SVGAttributes;
     attribs: SVGAttributes;
@@ -50,7 +50,7 @@ export interface DrawPointParams {
  * Can be used for any type of component that reserves the graphic property,
  * and provides a shouldDraw on its context.
  *
- * @private
+ * @internal
  *
  * @todo add type checking.
  * @todo export this function to enable usage
@@ -80,7 +80,7 @@ function draw(
     params.attribs = {
         ...params.attribs,
         'class': point.getClassName()
-    } || {};
+    };
 
     if ((point.shouldDraw())) {
         if (!graphic) {
@@ -132,8 +132,10 @@ function draw(
  *
  * */
 
+/** @internal */
 const DrawPointUtilities = {
     draw
 };
 
+/** @internal */
 export default DrawPointUtilities;

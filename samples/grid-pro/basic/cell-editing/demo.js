@@ -1,5 +1,5 @@
 Grid.grid('container', {
-    dataTable: {
+    data: {
         columns: {
             product: [
                 'Apples', 'Pears', 'Plums', 'Bananas', 'Oranges', 'Grapes',
@@ -21,16 +21,12 @@ Grid.grid('container', {
         }
     },
     lang: {
-        validationErrors: {
-            notEmpty: {
-                notification: 'New value cannot be empty.'
-            },
-            number: {
-                notification: 'New value has to be a number.'
-            },
-            boolean: {
-                notification: 'New value has to be a boolean.'
-            }
+        validationNotifications: {
+            notEmpty: 'New value cannot be empty.',
+            number: 'New value has to be a number.',
+            boolean: 'New value has to be a boolean.',
+            ignoreCaseUnique:
+                'New value has to be unique (case-sensitive).'
         }
     },
     rendering: {
@@ -53,8 +49,8 @@ Grid.grid('container', {
         dataType: 'string',
         cells: {
             editMode: {
-                // Gets default error message text or from lang (if defined)
-                validationRules: ['notEmpty']
+                // Gets default notification text or from lang (if defined)
+                validationRules: ['notEmpty', 'ignoreCaseUnique']
             }
         }
     }, {

@@ -2,11 +2,13 @@
  *
  *  Variable Pie module for Highcharts
  *
- *  (c) 2010-2025 Grzegorz Blachliński
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Grzegorz Blachliński
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -107,8 +109,9 @@ const VariablePieSeriesDefaults: VariablePieSeriesOptions = {
      * @sample {highcharts} highcharts/variable-radius-pie/sizeby/
      *         Difference between area and radius sizeBy
      *
-     * @type  {Highcharts.VariablePieSizeByValue}
-     * @since 6.0.0
+     * @declare Highcharts.VariablePieSizeByValue
+     * @since   6.0.0
+     * @type    {"area"|"radius"}
      */
     sizeBy: 'area',
 
@@ -173,12 +176,23 @@ const VariablePieSeriesDefaults: VariablePieSeriesOptions = {
  * @sample {highcharts} highcharts/series/data-array-of-objects/
  *         Config objects
  *
+ * @basic
  * @type      {Array<Array<(number|string),number>|*>}
  * @extends   series.pie.data
  * @excluding marker, x
  * @product   highcharts
  * @apioption series.variablepie.data
  */
+
+/**
+* The z value of the point.
+*
+* @type {(number| null)}
+*
+* @product highcharts
+*
+* @apioption series.variablepie.data.z
+*/
 
 ''; // Keeps doclets above separate
 

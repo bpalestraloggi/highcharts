@@ -233,7 +233,9 @@ QUnit.test('Vertical Linear axis horizontal placement', function (assert) {
     );
 
     chart.yAxis[1].update({
-        lineColor: 'red'
+        grid: {
+            borderColor: 'red'
+        }
     });
 
     assert.strictEqual(
@@ -2194,6 +2196,17 @@ QUnit.test(
             chart.xAxis[0].options.labels.align,
             'Label align options should still not be defined.'
         );
+
+        assert.ok(
+            chart.xAxis[0].clippable,
+            'Axes without grid.enabled should remain clippable when Gantt ' +
+            'module is loaded. #24795'
+        );
+        assert.ok(
+            chart.yAxis[0].clippable,
+            'Axes without grid.enabled should remain clippable when Gantt ' +
+            'module is loaded. #24795'
+        );
     }
 );
 
@@ -2304,4 +2317,72 @@ QUnit.test('slotWidth', assert => {
         `For inverted chart, grid x-axis should be closed from both sides
         with two ticks.`
     );
+
+    const chartOptions = {
+        chart: {
+            styledMode: false
+        },
+        yAxis: {
+            labels: {
+                useHTML: true,
+                formatter: function () {
+                    return `<div>${this.value} 123abc<div>`;
+                }
+            }
+        },
+        series: [
+            {
+                data: [
+                    {
+                        start: 1753488000000,
+                        end: 1755648000000
+                    }
+                ]
+            }
+        ]
+    };
+
+    chart = Highcharts.ganttChart('container', chartOptions);
+
+    const normalLabelWidth = chart.yAxis[0].ticks[0].label.getBBox().width;
+
+    chart = Highcharts.ganttChart('container', {
+        ...chartOptions,
+        chart: {
+            styledMode: true
+        }
+    });
+
+    const styledLabelWidth = chart.yAxis[0].ticks[0].label.getBBox().width;
+
+    assert.close(
+        normalLabelWidth,
+        styledLabelWidth,
+        10,
+        'Non-styled and styled mode labels width should be the similar, #22943'
+    );
 });
+
+QUnit.test(
+    'Destroying a chart should not throw a TypeError for axes without grid ' +
+    'additions, #24644',
+    function (assert) {
+        const chart = Highcharts.chart('container', {
+            series: [{ data: [1, 2, 3] }]
+        });
+
+        chart.axes.forEach(axis => {
+            delete axis.grid;
+        });
+
+        // Failure would be a TypeError thrown by onDestroy, which QUnit
+        // catches by itself.
+        chart.destroy();
+
+        assert.ok(
+            true,
+            'Destroying a chart with axes without grid additions should ' +
+            'not throw TypeError.'
+        );
+    }
+);

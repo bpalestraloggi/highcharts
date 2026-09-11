@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -31,13 +33,12 @@ const {
         line: LineSeries
     }
 } = SeriesRegistry;
-import U from '../../Core/Utilities.js';
-const {
+import {
+    defined,
     extend,
     merge,
-    objectEach,
-    pick
-} = U;
+    objectEach
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -45,15 +46,20 @@ const {
  *
  * */
 
+/** @internal */
 declare module '../../Core/Renderer/SVG/SVGPath' {
     interface SVGPath {
+        /** @internal */
         isArea?: boolean;
+        /** @internal */
         hasStackedCliffs?: boolean;
     }
 }
 
-declare module '../../Core/Series/SeriesLike' {
-    interface SeriesLike {
+/** @internal */
+declare module '../../Core/Series/SeriesBase' {
+    interface SeriesBase {
+        /** @internal */
         areaPath?: SVGPath;
     }
 }
@@ -67,7 +73,7 @@ declare module '../../Core/Series/SeriesLike' {
 /**
  * Area series type.
  *
- * @private
+ * @internal
  * @class
  * @name AreaSeries
  *
@@ -104,13 +110,12 @@ class AreaSeries extends LineSeries {
      *
      * */
 
-    /* eslint-disable valid-jsdoc */
 
     /**
      * Draw the graph and the underlying area. This method calls the Series
      * base function and adds the area. The areaPath is calculated in the
      * getSegmentPath method called from Series.prototype.drawGraph.
-     * @private
+     * @internal
      */
     public drawGraph(): void {
 
@@ -185,7 +190,7 @@ class AreaSeries extends LineSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public getGraphPath(points: Array<AreaPoint>): SVGPath {
         const getGraphPath = LineSeries.prototype.getGraphPath,
@@ -200,10 +205,7 @@ class AreaSeries extends LineSeries {
             translatedThreshold = Math.round( // #10909
                 yAxis.getThreshold(options.threshold as any)
             ),
-            connectNulls = pick( // #10574
-                options.connectNulls,
-                stacking === 'percent'
-            ),
+            connectNulls = (options.connectNulls ?? stacking === 'percent'),
             // To display null points in underlying stacked series, this
             // series graph must be broken, and the area also fall down to
             // fill the gap left by the null point. #2069
@@ -213,8 +215,9 @@ class AreaSeries extends LineSeries {
                 side: string
             ): void {
                 const point = points[i],
-                    stackedValues = stacking &&
-                        stacks[point.x as any].points[seriesIndex as any],
+                    otherPoint = points[otherI],
+                    stackedValues =
+                        stacking && (stacks[point.x].points[seriesIndex]),
                     nullVal = (point as any)[side + 'Null'] || 0,
                     cliffVal = (point as any)[side + 'Cliff'] || 0;
 
@@ -222,21 +225,20 @@ class AreaSeries extends LineSeries {
                     bottom,
                     isNull = true;
 
-                if (cliffVal || nullVal) {
-
-                    top = (nullVal ?
-                        (stackedValues as any)[0] :
-                        (stackedValues as any)[1]
+                if (stackedValues && (cliffVal || nullVal)) {
+                    top = (
+                        nullVal ? stackedValues[0] : stackedValues[1]
                     ) + cliffVal;
-                    bottom = (stackedValues as any)[0] + cliffVal;
+                    bottom = stackedValues[0] + cliffVal;
                     isNull = !!nullVal;
 
                 } else if (
                     !stacking &&
-                    points[otherI] &&
-                    points[otherI].isNull
+                    otherPoint &&
+                    (otherPoint.isNull ||
+                        !defined(otherPoint.plotY))
                 ) {
-                    top = bottom = threshold as any;
+                    top = bottom = threshold;
                 }
 
                 // Add to the top and bottom line of the area
@@ -279,10 +281,12 @@ class AreaSeries extends LineSeries {
                     points[i].leftNull = points[i].rightNull = void 0;
             }
 
-            isNull = points[i].isNull;
-            plotX = pick(points[i].rectPlotX, points[i].plotX);
+            // Treat points with undefined plotY as null (e.g. non-positive
+            // values on logarithmic axis, #18422)
+            isNull = points[i].isNull || !defined(points[i].plotY);
+            plotX = (points[i].rectPlotX ?? points[i].plotX);
             yBottom = stacking ?
-                pick(points[i].yBottom, translatedThreshold) :
+                (points[i].yBottom ?? translatedThreshold) :
                 translatedThreshold;
 
             if (!isNull || connectNulls) {
@@ -342,7 +346,7 @@ class AreaSeries extends LineSeries {
      * Return an array of stacked points, where null and missing points are
      * replaced by dummy points in order for gaps to be drawn correctly in
      * stacks.
-     * @private
+     * @internal
      */
     public getStackPoints(
         points: Array<AreaPoint>
@@ -357,7 +361,10 @@ class AreaSeries extends LineSeries {
             yAxisSeries = yAxis.series,
             seriesLength = yAxisSeries.length,
             upOrDown = yAxis.options.reversedStacks ? 1 : -1,
-            seriesIndex = yAxisSeries.indexOf(series);
+            seriesIndex = yAxisSeries.indexOf(series),
+            translatedThreshold = yAxis.getThreshold(
+                series.options.threshold || 0
+            );
 
 
         points = points || this.points;
@@ -470,18 +477,20 @@ class AreaSeries extends LineSeries {
                         // down
                         i += upOrDown;
                     }
-                    y = pick(y, 0);
-                    y = yAxis.translate(// #6272
-                        y, 0 as any, 1 as any, 0 as any, 1 as any
-                    );
+                    y ||= 0;
+                    const plotY = yAxis.positiveValuesOnly && y <= 0 ?
+                        translatedThreshold :
+                        yAxis.translate(// #6272
+                            y, false, true, false, true
+                        );
                     segment.push({ // @todo create real point object
                         isNull: true,
                         plotX: xAxis.translate(// #6272
-                            x as any, 0 as any, 0 as any, 0 as any, 1 as any
+                            x as any, false, false, false, true
                         ),
                         x: x as any,
-                        plotY: y,
-                        yBottom: y
+                        plotY,
+                        yBottom: plotY
                     } as any);
                 }
             });
@@ -491,7 +500,6 @@ class AreaSeries extends LineSeries {
         return segment;
     }
 
-    /* eslint-enable valid-jsdoc */
 
 }
 
@@ -501,6 +509,7 @@ class AreaSeries extends LineSeries {
  *
  * */
 
+/** @internal */
 interface AreaSeries {
     pointClass: typeof AreaPoint;
 }
@@ -514,6 +523,7 @@ extend(AreaSeries.prototype, {
  *
  * */
 
+/** @internal */
 declare module '../../Core/Series/SeriesType' {
     interface SeriesTypeRegistry {
         area: typeof AreaSeries;
@@ -527,4 +537,5 @@ SeriesRegistry.registerSeriesType('area', AreaSeries);
  *
  * */
 
+/** @internal */
 export default AreaSeries;

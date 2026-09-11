@@ -2,14 +2,16 @@
  *
  *  Select Cell Renderer class
  *
- *  (c) 2020-2025 Highsoft AS
+ *  (c) 2020-2026 Highsoft AS
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  *  Authors:
- *  - Dawid Dragula
+ *  - Dawid Draguła
+ *  - Sebastian Bochan
  *
  * */
 
@@ -29,15 +31,10 @@ import type {
     EditModeRendererTypeName
 } from '../../CellEditing/CellEditingComposition';
 
-import CellRenderer from '../CellRenderer.js';
-import CellRendererRegistry from '../CellRendererRegistry.js';
+import { CellRenderer, CellRendererOptions } from '../CellRenderer.js';
+import { registerRenderer } from '../CellRendererRegistry.js';
 import SelectContent from '../ContentTypes/SelectContent.js';
-
-import U from '../../../../Core/Utilities.js';
-const {
-    merge
-} = U;
-
+import { merge } from '../../../../Shared/Utilities.js';
 
 /* *
  *
@@ -58,12 +55,12 @@ class SelectRenderer extends CellRenderer implements EditModeRenderer {
     /**
      * Default options for the select renderer.
      */
-    public static defaultOptions: SelectRenderer.Options = {
+    public static defaultOptions: SelectRendererOptions = {
         type: 'select',
         options: []
     };
 
-    public override options: SelectRenderer.Options;
+    public override options: SelectRendererOptions;
 
 
     /* *
@@ -72,7 +69,7 @@ class SelectRenderer extends CellRenderer implements EditModeRenderer {
      *
      * */
 
-    public constructor(column: Column, options: Partial<CellRenderer.Options>) {
+    public constructor(column: Column, options: Partial<CellRendererOptions>) {
         super(column);
         this.options = merge(SelectRenderer.defaultOptions, options);
     }
@@ -96,49 +93,77 @@ class SelectRenderer extends CellRenderer implements EditModeRenderer {
 
 /* *
  *
- *  Namespace
+ *  Declarations
  *
  * */
 
-namespace SelectRenderer {
+/**
+ * Options to define a single select option.
+ */
+export interface SelectOption {
+    /**
+     * The value of the option.
+     */
+    value: string;
 
     /**
-     * Options to define a single select option.
+     * The label of the option.
      */
-    export interface SelectOption {
-        /**
-         * The value of the option.
-         */
-        value: string;
-
-        /**
-         * The label of the option.
-         */
-        label?: string;
-
-        /**
-         * Whether the option is disabled. If true, the option cannot be
-         * selected.
-         */
-        disabled?: boolean;
-    }
+    label?: string;
 
     /**
-     * Options to control the select renderer content.
+     * Whether the option is disabled. If true, the option cannot be
+     * selected.
      */
-    export interface Options extends CellRenderer.Options {
-        type: 'select';
+    disabled?: boolean;
+}
 
-        /**
-         * The options available in the select input.
-         */
-        options: SelectOption[];
+/**
+ * Options to control the select renderer content.
+ */
+export interface SelectRendererOptions extends CellRendererOptions {
+    /**
+     * Use the built-in select renderer.
+     *
+     * @default 'select'
+     */
+    type: 'select';
 
-        /**
-         * Whether the select input is disabled.
-         */
-        disabled?: boolean;
-    }
+    /**
+     * The options available in the select input.
+     */
+    options: SelectOption[];
+
+    /**
+     * Whether the select input is disabled.
+     */
+    disabled?: boolean;
+
+    /**
+     * Attributes to control the select input.
+     */
+    attributes?: SelectAttributes;
+}
+
+/**
+ * Attributes to control the select input.
+ */
+export interface SelectAttributes {
+    /**
+     * Whether multiple options can be selected at the same time.
+     */
+    multiple?: boolean;
+
+    /**
+     * Whether the select should receive focus automatically when editing
+     * starts.
+     */
+    autofocus?: boolean;
+
+    /**
+     * Number of visible options shown without scrolling.
+     */
+    size?: number;
 }
 
 
@@ -154,7 +179,7 @@ declare module '../CellRendererType' {
     }
 }
 
-CellRendererRegistry.registerRenderer('select', SelectRenderer);
+registerRenderer('select', SelectRenderer);
 
 
 /* *

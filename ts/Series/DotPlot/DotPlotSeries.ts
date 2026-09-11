@@ -1,17 +1,19 @@
 /* *
  *
- *  (c) 2009-2025 Torstein Honsi
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
  *  Dot plot series type for Highcharts
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
 /**
- * @private
+ * @internal
  * @todo
  * - Check update, remove etc.
  * - Custom icons like persons, carts etc. Either as images, font icons or
@@ -36,13 +38,7 @@ import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 const {
     column: ColumnSeries
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const {
-    extend,
-    isNumber,
-    merge,
-    pick
-} = U;
+import { extend, isNumber, merge } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -51,7 +47,7 @@ const {
  * */
 
 /**
- * @private
+ * @internal
  * @class
  * @name Highcharts.seriesTypes.dotplot
  *
@@ -130,10 +126,9 @@ class DotPlotSeries extends ColumnSeries {
                     pointMarkerOptions.symbol ||
                     (seriesMarkerOptions as any).symbol
                 ),
-                radius = pick(
-                    pointMarkerOptions.radius,
-                    (seriesMarkerOptions as any).radius
-                ),
+                radius =
+                    pointMarkerOptions.radius ??
+                    (seriesMarkerOptions as any).radius,
                 isSquare = symbol !== 'rect',
                 width = isSquare ? height : slotWidth,
                 shapeArgs = point.shapeArgs || {},
@@ -227,6 +222,7 @@ class DotPlotSeries extends ColumnSeries {
  *
  * */
 
+/** @internal */
 interface DotPlotSeries {
     pointAttr?: SVGAttributes;
     pointClass: typeof DotPlotPoint;
@@ -242,6 +238,7 @@ extend(DotPlotSeries.prototype, {
  *
  * */
 
+/** @internal */
 declare module '../../Core/Series/SeriesType' {
     interface SeriesTypeRegistry {
         dotplot: typeof DotPlotSeries;
@@ -256,4 +253,5 @@ SeriesRegistry.registerSeriesType('dotplot', DotPlotSeries);
  *
  * */
 
+/** @internal */
 export default DotPlotSeries;

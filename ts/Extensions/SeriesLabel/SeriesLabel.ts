@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2009-2025 Torstein Honsi
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -29,24 +31,23 @@
  *
  * */
 
-import type AnimationOptions from '../../Core/Animation/AnimationOptions';
-import type BBoxObject from '../../Core/Renderer/BBoxObject';
+import type { AnimationOptions } from '../../Core/Animation/AnimationOptions';
+import type { BBoxObject } from '../../Core/Renderer/BBoxObject';
 import type Chart from '../../Core/Chart/Chart.js';
-import type CSSObject from '../../Core/Renderer/CSSObject';
-import type PositionObject from '../../Core/Renderer/PositionObject';
+import type { CSSObject } from '../../Core/Renderer/CSSObject';
+import type { PositionObject } from '../../Core/Renderer/PositionObject';
 import type {
     LabelIntersectBoxObject,
     SeriesLabelOptions
 } from './SeriesLabelOptions';
 import type SplineSeries from '../../Series/Spline/SplineSeries';
-import type SVGAttributes from '../../Core/Renderer/SVG/SVGAttributes';
+import type { SVGAttributes } from '../../Core/Renderer/SVG/SVGAttributes';
 import type SVGElement from '../../Core/Renderer/SVG/SVGElement';
-import type SVGPath from '../../Core/Renderer/SVG/SVGPath';
+import type { SVGPath } from '../../Core/Renderer/SVG/SVGPath';
 import type SVGRenderer from '../../Core/Renderer/SVG/SVGRenderer';
-import type SymbolOptions from '../../Core/Renderer/SVG/SymbolOptions';
+import type { SymbolOptions } from '../../Core/Renderer/SVG/SymbolOptions';
 
-import A from '../../Core/Animation/AnimationUtilities.js';
-const { animObject } = A;
+import { animObject } from '../../Core/Animation/AnimationUtilities.js';
 import T from '../../Core/Templating.js';
 const { format } = T;
 import D from '../../Core/Defaults.js';
@@ -60,17 +61,15 @@ const {
     boxIntersectLine,
     intersectRect
 } = SLU;
-import U from '../../Core/Utilities.js';
-import { Palette } from '../../Core/Color/Palettes';
-const {
+import {
     addEvent,
     extend,
     fireEvent,
+    internalClearTimeout,
     isNumber,
-    pick,
     pushUnique,
     syncTimeout
-} = U;
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -78,8 +77,9 @@ const {
  *
  * */
 
-declare module '../../Core/Chart/ChartLike'{
-    interface ChartLike {
+/** @internal */
+declare module '../../Core/Chart/ChartBase'{
+    interface ChartBase {
         boxesToAvoid?: Array<LabelIntersectBoxObject>;
         labelSeries?: Array<Series>;
         labelSeriesMaxSum?: number;
@@ -87,8 +87,9 @@ declare module '../../Core/Chart/ChartLike'{
     }
 }
 
-declare module '../../Core/Series/SeriesLike' {
-    interface SeriesLike {
+/** @internal */
+declare module '../../Core/Series/SeriesBase' {
+    interface SeriesBase {
         interpolatedPoints?: Array<ControlPoint>;
         labelBySeries?: SVGElement;
         sum?: number;
@@ -97,13 +98,33 @@ declare module '../../Core/Series/SeriesLike' {
 
 declare module '../../Core/Series/SeriesOptions' {
     interface SeriesOptions {
+        /**
+         * Series labels are placed as close to the series as possible in a
+         * natural way, seeking to avoid other series. The goal of this
+         * feature is to make the chart more easily readable, like if a
+         * human designer placed the labels in the optimal position.
+         *
+         * The series labels currently work with series types having a
+         * `graph` or an `area`.
+         *
+         * @sample highcharts/series-label/line-chart
+         *         Line chart
+         * @sample highcharts/demo/streamgraph
+         *         Stream graph
+         * @sample highcharts/series-label/stock-chart
+         *         Stock chart
+         *
+         * @since    6.0.0
+         * @product  highcharts highstock gantt
+         * @requires modules/series-label
+         */
         label?: SeriesLabelOptions;
     }
 }
 
+/** @internal */
 declare module '../../Core/Renderer/SVG/SymbolType' {
     interface SymbolTypeRegistry {
-        /** @requires Extensions/SeriesLabel */
         connector: SymbolFunction;
     }
 }
@@ -139,7 +160,7 @@ const labelDistance = 3;
 
 /**
  * Check whether a proposed label position is clear of other elements.
- * @private
+ * @internal
  */
 function checkClearPoint(
     series: Series,
@@ -150,7 +171,7 @@ function checkClearPoint(
 ): (false|LabelClearPointObject) {
     const chart = series.chart,
         seriesLabelOptions = series.options.label || {},
-        onArea = pick(seriesLabelOptions.onArea, !!series.area),
+        onArea = (seriesLabelOptions.onArea ?? !!series.area),
         findDistanceToOthers = (onArea || seriesLabelOptions.connectorAllowed),
         leastDistance = 16,
         boxesToAvoid = chart.boxesToAvoid;
@@ -169,7 +190,7 @@ function checkClearPoint(
      * Get the weight in order to determine the ideal position. Larger distance
      * to other series gives more weight. Smaller distance to the actual point
      * (connector points only) gives more weight.
-     * @private
+     * @internal
      */
     function getWeight(
         distToOthersSquared: number,
@@ -355,9 +376,7 @@ function checkClearPoint(
 
 }
 
-/**
- * @private
- */
+/** @internal */
 function compose(
     ChartClass: typeof Chart,
     SVGRendererClass: typeof SVGRenderer
@@ -380,7 +399,7 @@ function compose(
  * redraw. It runs in  a timeout to prevent locking, and loops over all series,
  * taking all series and labels into account when placing the labels.
  *
- * @private
+ * @internal
  * @function Highcharts.Chart#drawSeriesLabels
  */
 function drawSeriesLabels(chart: Chart): void {
@@ -432,7 +451,7 @@ function drawSeriesLabels(chart: Chart): void {
         }
 
         const colorClass = (
-                'highcharts-color-' + pick(series.colorIndex, 'none')
+                'highcharts-color-' + (series.colorIndex ?? 'none')
             ),
             isNew = !series.labelBySeries,
             minFontSize = labelOptions.minFontSize,
@@ -447,7 +466,7 @@ function drawSeriesLabels(chart: Chart): void {
             paneWidth = chart.inverted ? series.yAxis.len : series.xAxis.len,
             paneHeight = chart.inverted ? series.xAxis.len : series.yAxis.len,
             points = series.interpolatedPoints,
-            onArea = pick(labelOptions.onArea, !!series.area),
+            onArea = (labelOptions.onArea ?? !!series.area),
             results: Array<LabelClearPointObject> = [],
             xData = series.getColumn('x');
 
@@ -473,7 +492,7 @@ function drawSeriesLabels(chart: Chart): void {
         }
 
         /**
-         * @private
+         * @internal
          */
         function insidePane(
             x: number,
@@ -482,11 +501,13 @@ function drawSeriesLabels(chart: Chart): void {
         ): boolean {
             const leftBound = Math.max(
                     paneLeft,
-                    pick(areaMin, -Infinity)
+                    (areaMin ?? -Infinity
+                    )
                 ),
                 rightBound = Math.min(
                     paneLeft + paneWidth,
-                    pick(areaMax, Infinity)
+                    (areaMax ?? Infinity
+                    )
                 );
             return (
                 x > leftBound &&
@@ -497,7 +518,7 @@ function drawSeriesLabels(chart: Chart): void {
         }
 
         /**
-         * @private
+         * @internal
          */
         function destroyLabel(): void {
             if (label) {
@@ -512,7 +533,10 @@ function drawSeriesLabels(chart: Chart): void {
                 if (typeof labelOptions.format === 'string') {
                     labelText = format(labelOptions.format, series, chart);
                 } else if (labelOptions.formatter) {
-                    labelText = labelOptions.formatter.call(series);
+                    labelText = labelOptions.formatter.call(
+                        series,
+                        series
+                    );
                 }
 
                 series.labelBySeries = label = chart.renderer
@@ -534,7 +558,7 @@ function drawSeriesLabels(chart: Chart): void {
 
                 if (!chart.renderer.styledMode) {
                     const color = typeof series.color === 'string' ?
-                        series.color : Palette.neutralColor60;
+                        series.color : 'var(--highcharts-neutral-color-60)';
                     label.css(extend<CSSObject>({
                         color: onArea ?
                             chart.renderer.getContrast(color) :
@@ -769,7 +793,7 @@ function drawSeriesLabels(chart: Chart): void {
  * Points to avoid. In addition to actual data points, the label should avoid
  * interpolated positions.
  *
- * @private
+ * @internal
  * @function Highcharts.Series#getPointsOnGraph
  */
 function getPointsOnGraph(series: Series): (Array<ControlPoint>|undefined) {
@@ -791,7 +815,7 @@ function getPointsOnGraph(series: Series): (Array<ControlPoint>|undefined) {
         paneHeight = inverted ? xAxis.len : yAxis.len,
         paneWidth = inverted ? yAxis.len : xAxis.len,
         seriesLabelOptions = series.options.label || {},
-        onArea = pick(seriesLabelOptions.onArea, !!series.area),
+        onArea = (seriesLabelOptions.onArea ?? !!series.area),
         translatedThreshold =
             yAxis.getThreshold(series.options.threshold as any),
         grid: Record<string, number> = {},
@@ -809,7 +833,7 @@ function getPointsOnGraph(series: Series): (Array<ControlPoint>|undefined) {
      * Push the point to the interpolated points, but only if that position in
      * the grid has not been occupied. As a performance optimization, we divide
      * the plot area into a grid and only add one point per series (#9815).
-     * @private
+     * @internal
      */
     function pushDiscrete(point: ControlPoint): void {
         const cellSize = 8,
@@ -893,13 +917,13 @@ function getPointsOnGraph(series: Series): (Array<ControlPoint>|undefined) {
                     if (inverted) {
                         ctlPoint.chartCenterX = paneLeft + paneWidth - (
                             (plotHigh ? plotHigh : point.plotY || 0) +
-                            pick(point.yBottom, translatedThreshold)
+                            (point.yBottom ?? translatedThreshold)
                         ) / 2;
 
                     } else {
                         ctlPoint.chartCenterY = paneTop + (
                             (plotHigh ? plotHigh : plotY) +
-                            pick(point.yBottom, translatedThreshold)
+                            (point.yBottom ?? translatedThreshold)
                         ) / 2;
                     }
                 }
@@ -956,7 +980,7 @@ function getPointsOnGraph(series: Series): (Array<ControlPoint>|undefined) {
  * Overridable function to return series-specific font sizes for the labels. By
  * default it returns bigger font sizes for series with the greater sum of y
  * values.
- * @private
+ * @internal
  */
 function labelFontSize(
     series: Series,
@@ -971,7 +995,7 @@ function labelFontSize(
 
 /**
  * Prepare drawing series labels.
- * @private
+ * @internal
  */
 function onChartRedraw(this: Chart, e: Event): void {
 
@@ -984,7 +1008,7 @@ function onChartRedraw(this: Chart, e: Event): void {
         chart.labelSeriesMaxSum = 0;
 
         if (chart.seriesLabelTimer) {
-            U.clearTimeout(chart.seriesLabelTimer);
+            internalClearTimeout(chart.seriesLabelTimer);
         }
 
         // Which series should have labels
@@ -1053,7 +1077,7 @@ function onChartRedraw(this: Chart, e: Event): void {
 
 /**
  * General symbol definition for labels with connector.
- * @private
+ * @internal
  */
 function symbolConnector(
     x: number,
@@ -1108,10 +1132,12 @@ function symbolConnector(
  *
  * */
 
+/** @internal */
 const SeriesLabel = {
     compose
 };
 
+/** @internal */
 export default SeriesLabel;
 
 /* *

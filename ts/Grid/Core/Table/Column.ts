@@ -2,14 +2,15 @@
  *
  *  Grid Column class
  *
- *  (c) 2020-2025 Highsoft AS
+ *  (c) 2020-2026 Highsoft AS
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  *  Authors:
- *  - Dawid Dragula
+ *  - Dawid Draguła
  *  - Sebastian Bochan
  *
  * */
@@ -22,25 +23,36 @@
  *
  * */
 
-import type { IndividualColumnOptions } from '../Options';
+import type {
+    CellValueGetterCallback,
+    IndividualColumnOptions
+} from '../Options';
 import type Cell from './Cell';
 import type CellContent from './CellContent/CellContent';
 import type HeaderCell from './Header/HeaderCell';
+import type { DeepPartial } from '../../../Shared/Types';
+import type { NonArrayColumnOptions } from '../Grid';
+import type {
+    CellType as DataTableCellType,
+    Column as DataTableColumn
+} from '../../../Data/DataTable';
 
+import {
+    hasDataTableProvider
+} from '../Data/DataProvider.js';
 import Table from './Table.js';
-import DataTable from '../../../Data/DataTable.js';
-import Utils from '../../../Core/Utilities.js';
 import ColumnSorting from './Actions/ColumnSorting';
+import ColumnFiltering from './Actions/ColumnFiltering/ColumnFiltering.js';
 import Templating from '../../../Core/Templating.js';
 import TextContent from './CellContent/TextContent.js';
 import Globals from '../Globals.js';
 import TableCell from './Body/TableCell';
+import GridUtils from '../GridUtils.js';
+import { defined, fireEvent } from '../../../Shared/Utilities.js';
 
 const {
-    defined,
-    merge,
-    fireEvent
-} = Utils;
+    createOptionsProxy
+} = GridUtils;
 
 
 /* *
@@ -52,7 +64,7 @@ const {
 /**
  * Represents a column in the data grid.
  */
-class Column {
+export class Column {
 
     /* *
     *
@@ -68,7 +80,7 @@ class Column {
     /**
      * Type of the data in the column.
      */
-    public readonly dataType: Column.DataType;
+    public dataType: ColumnDataType = 'string';
 
     /**
      * The cells of the column.
@@ -81,14 +93,17 @@ class Column {
     public id: string;
 
     /**
-     * The data of the column.
+     * The data of the column. Shouldn't be used directly in all cases, because
+     * it's not guaranteed to be defined (e.g. when using the lazy loading,
+     * `RemoteDataProvider`).
      */
-    public data?: DataTable.Column;
+    public data?: DataTableColumn;
 
     /**
-     * The options of the column.
+     * The options of the column as a proxy that provides merged access to
+     * original options and defaults if not defined in the individual options.
      */
-    public readonly options: Column.Options;
+    public options: NoIdColumnOptions;
 
     /**
      * The index of the column in the viewport.
@@ -104,6 +119,26 @@ class Column {
      * Sorting column module.
      */
     public sorting?: ColumnSorting;
+
+    /**
+     * Class names applied to every element of the column (header, body and
+     * filter cells): the ones from the `className` option, plus the ones
+     * features contribute.
+     */
+    public readonly classNames: string[] = [];
+
+    /**
+     * Cell value resolver installed by a feature that derives the column values
+     * from the rest of the row (the Grid Pro `columnAggregator` option). A user
+     * `cells.valueGetter` takes precedence over it, and returning nothing falls
+     * back to the column's own data.
+     */
+    public valueResolver?: CellValueGetterCallback;
+
+    /**
+     * Filtering column module.
+     */
+    public filtering?: ColumnFiltering;
 
 
     /* *
@@ -135,18 +170,26 @@ class Column {
         this.index = index;
         this.viewport = viewport;
 
-        this.loadData();
+        // Populate column options map if not exists, to prepare option
+        // references for each column.
+        if (grid.options && !grid.columnPolicy.hasColumnOptions(id)) {
+            const columnOptions: IndividualColumnOptions = { id };
+            (grid.options.columns ??= []).push(columnOptions);
+            grid.columnPolicy.setColumnOption(id, {
+                index: grid.options.columns.length - 1,
+                options: columnOptions
+            });
+        }
 
-        this.dataType = this.assumeDataType();
-
-        this.options = merge(
-            grid.options?.columnDefaults ?? {},
-            grid.columnOptionsMap?.[id]?.options ?? {}
+        this.options = createOptionsProxy(
+            grid.columnPolicy.getIndividualColumnOptions(id) ?? {},
+            grid.options?.columnDefaults
         );
 
-        fireEvent(this, 'afterInit');
+        if (this.options.className) {
+            this.classNames.push(...this.options.className.split(/\s+/g));
+        }
     }
-
 
     /* *
     *
@@ -155,10 +198,108 @@ class Column {
     * */
 
     /**
+     * Initializes the column data-related properties.
+     */
+    public async init(): Promise<void> {
+        this.loadData();
+        this.dataType = await this.assumeDataType();
+
+        if (this.viewport.grid.columnPolicy.isColumnFilteringEnabled(this.id)) {
+            this.filtering = new ColumnFiltering(this);
+        }
+
+        fireEvent(this, 'afterInit');
+    }
+
+    /**
      * Loads the data of the column from the viewport's data table.
      */
     public loadData(): void {
-        this.data = this.viewport.dataTable.getColumn(this.id, true);
+        const grid = this.viewport.grid;
+        const dp = grid.dataProvider;
+        const sourceColumnId = grid.columnPolicy.getColumnSourceId(this.id);
+        const isUnbound = grid.columnPolicy.isColumnUnbound(this.id);
+
+        if (
+            hasDataTableProvider(dp) &&
+            sourceColumnId && !isUnbound
+        ) {
+            this.data = dp.getDataTable(true)?.getColumn(
+                sourceColumnId,
+                true
+            );
+        } else {
+            delete this.data;
+        }
+
+        if (grid.columnPolicy.isColumnFilteringEnabled(this.id)) {
+            this.filtering ??= new ColumnFiltering(this);
+        } else {
+            delete this.filtering;
+        }
+    }
+
+    /**
+     * Resolves the raw value for a table cell.
+     *
+     * @param cell
+     * The cell to resolve the value for.
+     */
+    public async getCellValue(cell: TableCell): Promise<DataTableCellType> {
+        const valueGetter = this.options.cells?.valueGetter;
+        if (valueGetter) {
+            return this.conformValue(await valueGetter.call(cell, cell));
+        }
+
+        if (this.valueResolver) {
+            const resolved = await this.valueResolver.call(cell, cell);
+            if (defined(resolved)) {
+                return this.conformValue(resolved);
+            }
+        }
+
+        const sourceColumnId = this.viewport.grid.columnPolicy
+            .getColumnSourceId(this.id);
+        if (!sourceColumnId) {
+            return void 0;
+        }
+
+        return this.conformValue(
+            await this.viewport.grid.dataProvider?.getValue(
+                sourceColumnId,
+                cell.row.index
+            )
+        );
+    }
+
+    /**
+     * Whether the column derives its cell values from the row instead of
+     * reading them from the data, so editing a cell of the row must re-resolve
+     * them.
+     */
+    public isDerived(): boolean {
+        return !!(this.options.cells?.valueGetter || this.valueResolver);
+    }
+
+    /**
+     * Keeps a value the grid resolves for a cell within the column's declared
+     * `dataType`, so cell formatters and renderers written for the column never
+     * receive a foreign type. Values derived by the grid are the usual source:
+     * a numeric aggregator over a text column resolves to `0`.
+     *
+     * @param value
+     * Resolved cell value.
+     */
+    public conformValue(value: DataTableCellType): DataTableCellType {
+        if (
+            this.dataType === 'string' &&
+            defined(value) &&
+            typeof value !== 'string'
+        ) {
+            return String(value);
+        }
+
+        return value;
     }
 
     /**
@@ -176,49 +317,37 @@ class Column {
      * Assumes the data type of the column based on the options or data in the
      * column if not specified.
      */
-    private assumeDataType(): Column.DataType {
+    private async assumeDataType(): Promise<ColumnDataType> {
         const { grid } = this.viewport;
 
-        const type = grid.columnOptionsMap?.[this.id]?.options.dataType ??
+        const dp = grid.dataProvider;
+        const type = grid.columnPolicy
+            .getIndividualColumnOptions(this.id)?.dataType ??
             grid.options?.columnDefaults?.dataType;
         if (type) {
             return type;
         }
 
-        if (!this.data) {
+        const sourceColumnId = grid.columnPolicy.getColumnSourceId(this.id);
+        if (grid.columnPolicy.isColumnUnbound(this.id) || !sourceColumnId) {
             return 'string';
         }
 
-        if (!Array.isArray(this.data)) {
-            // Typed array
-            return 'number';
+        return (await dp?.getColumnDataType(sourceColumnId)) ?? 'string';
+    }
+
+    /**
+     * Adds the column class names to one of its elements.
+     *
+     * @param element
+     * Element of the column (a header, body or filter cell).
+     */
+    public applyClassNames(element: HTMLElement): void {
+        if (!this.classNames.length) {
+            return;
         }
 
-        for (let i = 0, iEnd = Math.min(this.data.length, 30); i < iEnd; ++i) {
-            if (!defined(this.data[i])) {
-                // If the data is null or undefined, we should look
-                // at the next value to determine the type.
-                continue;
-            }
-
-            switch (typeof this.data[i]) {
-                case 'number':
-                    return 'number';
-                case 'boolean':
-                    return 'boolean';
-                default:
-                    return 'string';
-            }
-        }
-
-        // eslint-disable-next-line no-console
-        console.warn(
-            `Column "${this.id}" contains too few data points with ` +
-            'unambiguous types to correctly determine its dataType. It\'s ' +
-            'recommended to set the `dataType` option for it.'
-        );
-
-        return 'string';
+        element.classList.add(...this.classNames);
     }
 
     /**
@@ -229,11 +358,7 @@ class Column {
      */
     public registerCell(cell: Cell): void {
         cell.htmlElement.setAttribute('data-column-id', this.id);
-        if (this.options.className) {
-            cell.htmlElement.classList.add(
-                ...this.options.className.split(/\s+/g)
-            );
-        }
+        this.applyClassNames(cell.htmlElement);
         if (this.viewport.grid.hoveredColumnId === this.id) {
             cell.htmlElement.classList.add(
                 Globals.getClassName('hoveredColumn')
@@ -259,7 +384,7 @@ class Column {
      * Returns the width of the column in pixels.
      */
     public getWidth(): number {
-        return this.viewport.columnDistribution.getColumnWidth(this);
+        return this.viewport.columnLayout.getColumnWidth(this);
     }
 
     /**
@@ -313,9 +438,35 @@ class Column {
         return Templating.format(template, this, this.viewport.grid);
     }
 
-    public update(options: Column.Options, render?: boolean): void;
+    /**
+     * Sets the new column options to the userOptions field.
+     *
+     * @param options
+     * The options to set.
+     *
+     * @param overwrite
+     * Whether to overwrite the existing column options with the new ones.
+     * Default is `false`.
+     *
+     * @returns
+     * The difference between the previous and the new column options in form
+     * of a record of `[column.id]: column.options`.
+     *
+     * @internal
+     */
+    public setOptions(
+        options: NoIdColumnOptions,
+        overwrite = false
+    ): DeepPartial<NonArrayColumnOptions> {
+        return this.viewport.grid.setColumnOptions([{
+            id: this.id,
+            ...options
+        }], overwrite);
+    }
 
-    public update(options: Column.Options, render?: true): Promise<void>;
+    public update(options: NoIdColumnOptions, render?: boolean): void;
+
+    public update(options: NoIdColumnOptions, render?: true): Promise<void>;
 
     /**
      * Updates the column with new options.
@@ -328,7 +479,7 @@ class Column {
      * extend the options object. Defaults to `true`.
      */
     public async update(
-        newOptions: Column.Options,
+        newOptions: NoIdColumnOptions,
         render: boolean = true
     ): Promise<void> {
         await this.viewport.grid.updateColumn(this.id, newOptions, render);
@@ -338,15 +489,13 @@ class Column {
 
 /* *
  *
- *  Class Namespace
+ *  Declarations
  *
  * */
 
-namespace Column {
-    export type Options = Omit<IndividualColumnOptions, 'id'>;
+export type NoIdColumnOptions = Omit<IndividualColumnOptions, 'id'>;
 
-    export type DataType = 'string' | 'number' | 'boolean' | 'datetime';
-}
+export type ColumnDataType = 'string' | 'number' | 'boolean' | 'datetime';
 
 
 /* *

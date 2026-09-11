@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -22,14 +24,12 @@ import type ScrollbarOptions from '../../Stock/Scrollbar/ScrollbarOptions';
 
 import H from '../Globals.js';
 const { composed } = H;
-import U from '../Utilities.js';
-const {
+import {
     addEvent,
     correctFloat,
     defined,
-    pick,
     pushUnique
-} = U;
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -37,6 +37,7 @@ const {
  *
  * */
 
+/** @internal */
 declare module './AxisComposition' {
     interface AxisComposition {
         scrollbar?: ScrollbarType;
@@ -45,10 +46,27 @@ declare module './AxisComposition' {
 
 declare module './AxisOptions' {
     interface AxisOptions {
+        /**
+         * An optional scrollbar to display on the X axis in response to
+         * limiting the minimum and maximum of the axis values.
+         *
+         * In styled mode, all the presentational options for the scrollbar are
+         * replaced by the classes `.highcharts-scrollbar-thumb`,
+         * `.highcharts-scrollbar-arrow`, `.highcharts-scrollbar-button`,
+         * `.highcharts-scrollbar-rifles` and `.highcharts-scrollbar-track`.
+         *
+         * @sample {highstock} stock/yaxis/heatmap-scrollbars/
+         *         Heatmap with both scrollbars
+         *
+         * @since     4.2.6
+         * @product   highstock
+         * @apioption xAxis.scrollbar
+         */
         scrollbar?: ScrollbarOptions;
     }
 }
 
+/** @internal */
 interface ScrollbarAxis extends Axis {
     scrollbar?: ScrollbarType;
 }
@@ -59,6 +77,7 @@ interface ScrollbarAxis extends Axis {
  *
  * */
 
+/** @internal */
 namespace ScrollbarAxis {
 
     /* *
@@ -78,7 +97,7 @@ namespace ScrollbarAxis {
     /**
      * Attaches to axis events to create scrollbars if enabled.
      *
-     * @private
+     * @internal
      *
      * @param {Highcharts.Axis} AxisClass
      * Axis class to extend.
@@ -101,18 +120,12 @@ namespace ScrollbarAxis {
 
     }
 
-    /** @private */
+    /** @internal */
     function getExtremes(
         axis: ScrollbarAxis
     ): Record<string, number> {
-        const axisMin = pick(
-            axis.options?.min,
-            axis.min as any
-        );
-        const axisMax = pick(
-            axis.options?.max,
-            axis.max as any
-        );
+        const axisMin = (axis.options?.min ?? axis.min as any);
+        const axisMax = (axis.options?.max ?? axis.max as any);
         return {
             axisMin,
             axisMax,
@@ -138,7 +151,7 @@ namespace ScrollbarAxis {
 
     /**
      * Make space for a scrollbar.
-     * @private
+     * @internal
      */
     function onAxisAfterGetOffset(
         this: Axis
@@ -158,7 +171,7 @@ namespace ScrollbarAxis {
 
     /**
      * Wrap axis initialization and create scrollbar if enabled.
-     * @private
+     * @internal
      */
     function onAxisAfterInit(
         this: Axis
@@ -245,7 +258,7 @@ namespace ScrollbarAxis {
 
     /**
      * Wrap rendering axis, and update scrollbar if one is created.
-     * @private
+     * @internal
      */
     function onAxisAfterRender(
         this: Axis
@@ -332,7 +345,10 @@ namespace ScrollbarAxis {
                 isNaN(scrollMax) ||
                 !defined(axis.min) ||
                 !defined(axis.max) ||
-                axis.dataMin === axis.dataMax // #10733
+                (
+                    defined(axis.dataMin) && // #23335
+                    axis.dataMin === axis.dataMax // #10733
+                )
             ) {
                 // Default action: when data extremes are the same or there is
                 // not extremes on the axis, but scrollbar exists, make it
@@ -378,4 +394,5 @@ namespace ScrollbarAxis {
  *
  * */
 
+/** @internal */
 export default ScrollbarAxis;

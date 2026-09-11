@@ -9,12 +9,10 @@ const commonMSOptions = {
     }
 };
 
-
 const basicInvestmentPlan = {
     interval: 30, // Every 30 days
     amount: 200   // Amount in EUR
 };
-
 
 const stockCollection = [{
     tradingSymbol: 'NFLX',
@@ -33,7 +31,6 @@ const stockCollection = [{
     ISIN: 'US02079K3059',
     SecID: '0P000002HD'
 }];
-
 
 // Simulation of personal portfolio
 const generatePortfolio = (investmentPlan, stockPrices) => {
@@ -60,13 +57,11 @@ const generatePortfolio = (investmentPlan, stockPrices) => {
     };
 };
 
-
 const getHoldings = weight => stockCollection.map(stock => ({
     id: stock.ISIN,
     idType: 'ISIN',
     ...(weight && { weight })
 }));
-
 
 // Return the sum of the last indices of arrays
 const getCurrentTotal = arrOfArr => {
@@ -93,9 +88,8 @@ const getCurrentTotal = arrOfArr => {
 
     await timeSeriesConnector.load();
 
-
     const { Date: dates, ...companies } =
-        timeSeriesConnector.table.getColumns();
+        timeSeriesConnector.getTable().getColumns();
 
     const processedData = Object.fromEntries(
         Object.entries(companies).map(([key, values]) => [
@@ -106,7 +100,7 @@ const getCurrentTotal = arrOfArr => {
 
     const holdings = [],
         investedAmounts = [],
-        dataGridData = [];
+        gridData = [];
 
     stockCollection.forEach(stock => {
         const { holding, investedAmount } = generatePortfolio(
@@ -116,21 +110,20 @@ const getCurrentTotal = arrOfArr => {
 
         holdings.push(holding);
         investedAmounts.push(investedAmount);
-
     });
 
     const investedAmountTotal = getCurrentTotal(investedAmounts),
         lastHoldingTotal = getCurrentTotal(holdings),
         annualInvestment = 200 * 12 * holdings.length;
 
-    // Generate columns for the datagrid
+    // Generate columns for the grid
     stockCollection.forEach((stock, i) => {
         const len = holdings[i].length,
             lastHolding = holdings[i][len - 1],
             ISIN = stock.ISIN,
             tradingSymbol = stock.tradingSymbol;
 
-        dataGridData.push([
+        gridData.push([
             tradingSymbol,
             ISIN,
             Math.round(lastHolding / lastHoldingTotal * 100)
@@ -191,7 +184,6 @@ const getCurrentTotal = arrOfArr => {
             id: 'invested',
             className: 'dotted-line'
         }],
-
         responsive: {
             rules: [{
                 condition: {
@@ -207,43 +199,33 @@ const getCurrentTotal = arrOfArr => {
                 }
             }]
         }
-
     };
 
     const riskScoreKPIOptions = {
         chart: {
-            height: 186,
+            height: 200,
             type: 'solidgauge',
-            className: 'hidden-title'
+            className: 'hidden-title',
+            marginTop: 30
         },
         title: {
             text: 'Risk score',
             floating: true
         },
         pane: {
-            background: [{
-                borderRadius: 30,
-                borderWidth: 0,
-                outerRadius: '100%',
-                innerRadius: '85%',
-                shape: 'arc'
-            }],
-            size: 250,
-            center: ['50%', '90%'],
-            endAngle: 80,
-            startAngle: -80
+            innerSize: '85%',
+            borderRadius: '50%',
+            startAngle: -100,
+            endAngle: 100
         },
         tooltip: {
             enabled: false
         },
         plotOptions: {
             series: {
-                borderRadius: 20,
-                innerRadius: '85%',
                 dataLabels: {
-                    format: '<div style="text-align:center; ' +
-                        'margin-top: -20px">' +
-                    '<div style="font-size:1.6em;">{y:.0f}</div>' +
+                    format: '<div style="text-align:center">' +
+                    '<div style="font-size:1.4em;">{y:.0f}</div>' +
                     '<div style="font-size:14px; opacity:0.5; ' +
                     'text-align: center;">Risk score</div>' +
                     '</div>',
@@ -265,18 +247,21 @@ const getCurrentTotal = arrOfArr => {
             visible: true,
             tickPositions: [23, 40, 60, 78, 90],
             minorTickWidth: 0,
-            tickLength: 50,
+            gridLineWidth: 2,
             min: 0,
             max: 100,
             labels: {
                 enabled: false
             },
-            zIndex: 10
+            gridZIndex: 10,
+            startOnTick: false,
+            endOnTick: false
         }
     };
+
     const goalAnalysisKPIOptions = {
         chart: {
-            height: 186,
+            height: 200,
             type: 'solidgauge',
             className: 'hidden-title'
         },
@@ -285,12 +270,8 @@ const getCurrentTotal = arrOfArr => {
             floating: true
         },
         pane: {
-            startAngle: 0,
-            endAngle: 360,
-            background: [{
-                innerRadius: '90%',
-                outerRadius: '115%'
-            }]
+            innerSize: '80%',
+            borderRadius: '50%'
         },
         accessibility: {
             typeDescription: 'circular gauge',
@@ -312,18 +293,14 @@ const getCurrentTotal = arrOfArr => {
             enabled: false
         },
         series: [{
-            borderRadius: 30,
             dataLabels: {
-                format: '<div style="text-align:center; ' +
-                    'margin-top: -40px">' +
-                    '<div style="font-size:1.4em;">{y}%</div>' +
-                    '<div style="font-size:14px; opacity:0.5; ' +
+                format: '<div style="text-align:center">' +
+                    '<div style="font-size:1.2em;">{y:.0f}</div>' +
+                    '<div style="font-size:10px; opacity:0.5; ' +
                     'text-align: center;">Goal probability</div>' +
                     '</div>',
                 useHTML: true
-            },
-            innerRadius: '90%',
-            radius: '115%'
+            }
         }]
     };
 
@@ -342,64 +319,54 @@ const getCurrentTotal = arrOfArr => {
             connectors: [{
                 id: 'investment-data',
                 type: 'JSON',
-                options: {
-                    data: [dates, ...investedAmounts],
-                    orientation: 'columns',
-                    firstRowAsNames: false,
-                    dataModifier: {
-                        type: 'Math',
-                        columnFormulas: [{
-                            column: 'investmentAccumulation',
-                            formula: '=SUM(B1:ZZ1)'
-                        }]
-                    }
+                data: [dates, ...investedAmounts],
+                orientation: 'columns',
+                firstRowAsNames: false,
+                dataModifier: {
+                    type: 'Math',
+                    columnFormulas: [{
+                        column: 'investmentAccumulation',
+                        formula: '=SUM(B1:ZZ1)'
+                    }]
                 }
             }, {
                 id: 'holding-data',
                 type: 'JSON',
-                options: {
-                    data: [dates, ...holdings],
-                    orientation: 'columns',
-                    firstRowAsNames: false,
-                    dataModifier: {
-                        type: 'Math',
-                        columnFormulas: [{
-                            column: 'holdingAccumulation',
-                            formula: '=SUM(B1:ZZ1)'
-                        }]
-                    }
+                data: [dates, ...holdings],
+                orientation: 'columns',
+                firstRowAsNames: false,
+                dataModifier: {
+                    type: 'Math',
+                    columnFormulas: [{
+                        column: 'holdingAccumulation',
+                        formula: '=SUM(B1:ZZ1)'
+                    }]
                 }
             }, {
                 id: 'stock-grid',
                 type: 'JSON',
-                options: {
-                    columnNames: ['Name', 'ISIN', 'Percentage'],
-                    firstRowAsNames: false,
-                    data: dataGridData
-                }
+                columnIds: ['Name', 'ISIN', 'Percentage'],
+                firstRowAsNames: false,
+                data: gridData
             }, {
                 id: 'risk-score',
                 type: 'MorningstarRiskScore',
-                options: {
-                    ...commonMSOptions,
-                    portfolios: [
-                        portfolio
-                    ]
-                }
+                ...commonMSOptions,
+                portfolios: [
+                    portfolio
+                ]
             }, {
                 id: 'goal-analysis',
                 type: 'MorningstarGoalAnalysis',
-                options: {
-                    ...commonMSOptions,
-                    annualInvestment,
-                    assetClassWeights: [
-                        1
-                    ],
-                    currentSavings: lastHoldingTotal,
-                    includeDetailedInvestmentGrowthGraph: true,
-                    target: 100000,
-                    timeHorizon: 5
-                }
+                ...commonMSOptions,
+                annualInvestment,
+                assetClassWeights: [
+                    1
+                ],
+                currentSavings: lastHoldingTotal,
+                includeDetailedInvestmentGrowthGraph: true,
+                target: 100000,
+                timeHorizon: 5
             }]
         },
         gui: {
@@ -423,7 +390,7 @@ const getCurrentTotal = arrOfArr => {
                     }]
                 }, {
                     cells: [{
-                        id: 'data-grid'
+                        id: 'grid'
                     }, {
                         id: 'kpi-gauge-risk'
                     }]
@@ -478,12 +445,12 @@ const getCurrentTotal = arrOfArr => {
             }],
             chartOptions: walletChartOptions
         }, {
-            type: 'DataGrid',
+            type: 'Grid',
             connector: {
                 id: 'stock-grid'
             },
-            renderTo: 'data-grid',
-            dataGridOptions: {
+            renderTo: 'grid',
+            gridOptions: {
                 rendering: {
                     rows: {
                         strictHeights: true
@@ -508,7 +475,7 @@ const getCurrentTotal = arrOfArr => {
             connector: {
                 id: 'risk-score'
             },
-            columnName: 'PersonalPortfolio_RiskScore',
+            columnId: 'PersonalPortfolio_RiskScore',
             chartOptions: riskScoreKPIOptions
         }, {
             type: 'KPI',

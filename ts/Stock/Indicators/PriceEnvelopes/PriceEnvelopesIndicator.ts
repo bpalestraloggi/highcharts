@@ -1,8 +1,9 @@
 /* *
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -14,7 +15,7 @@
  *
  * */
 
-import type { IndicatorLinkedSeriesLike } from '../IndicatorLike';
+import type { IndicatorLinkedSeriesBase } from '../IndicatorBase';
 import type IndicatorValuesObject from '../IndicatorValuesObject';
 import type LineSeries from '../../../Series/Line/LineSeries';
 import type {
@@ -26,12 +27,7 @@ import type PriceEnvelopesPoint from './PriceEnvelopesPoint';
 import MultipleLinesComposition from '../MultipleLinesComposition.js';
 import SeriesRegistry from '../../../Core/Series/SeriesRegistry.js';
 const { sma: SMAIndicator } = SeriesRegistry.seriesTypes;
-import U from '../../../Core/Utilities.js';
-const {
-    extend,
-    isArray,
-    merge
-} = U;
+import { extend, isArray, merge } from '../../../Shared/Utilities.js';
 
 /* *
  *
@@ -42,7 +38,7 @@ const {
 /**
  * The Price Envelopes series type.
  *
- * @private
+ * @internal
  * @class
  * @name Highcharts.seriesTypes.priceenvelopes
  *
@@ -61,7 +57,7 @@ class PriceEnvelopesIndicator extends SMAIndicator {
      * This series requires the `linkedTo` option to be set and should be loaded
      * after the `stock/indicators/indicators.js` file.
      *
-     * @sample stock/indicators/price-envelopes
+     * @sample {highstock} stock/indicators/price-envelopes
      *         Price envelopes
      *
      * @extends      plotOptions.sma
@@ -91,6 +87,19 @@ class PriceEnvelopesIndicator extends SMAIndicator {
              */
             bottomBand: 0.1
         },
+
+        /**
+         * Option for fill color between lines in Price Envelopes Indicator.
+         *
+         * @sample {highstock} stock/indicators/indicator-area-fill
+         *      Background fill between lines.
+         *
+         * @type      {Highcharts.Color}
+         * @since 11.0.0
+         * @apioption plotOptions.priceenvelopes.fillColor
+         *
+         */
+
         /**
          * Bottom line options.
          */
@@ -123,17 +132,6 @@ class PriceEnvelopesIndicator extends SMAIndicator {
         dataGrouping: {
             approximation: 'averages'
         }
-        /**
-         * Option for fill color between lines in Price Envelopes Indicator.
-         *
-         * @sample {highstock} stock/indicators/indicator-area-fill
-         *      Background fill between lines.
-         *
-         * @type      {Highcharts.Color}
-         * @since 11.0.0
-         * @apioption plotOptions.priceenvelopes.fillColor
-         *
-         */
     } as PriceEnvelopesOptions);
 
     /* *
@@ -171,7 +169,7 @@ class PriceEnvelopesIndicator extends SMAIndicator {
     }
 
     public getValues <TLinkedSeries extends LineSeries>(
-        series: TLinkedSeries&IndicatorLinkedSeriesLike,
+        series: TLinkedSeries&IndicatorLinkedSeriesBase,
         params: PriceEnvelopesParamsOptions
     ): (IndicatorValuesObject<TLinkedSeries>|undefined) {
         const period = params.period,
@@ -240,6 +238,7 @@ class PriceEnvelopesIndicator extends SMAIndicator {
  *
  * */
 
+/** @internal */
 interface PriceEnvelopesIndicator extends MultipleLinesComposition.IndicatorComposition {
     linesApiNames: Array<string>;
     nameComponents: Array<string>;
@@ -268,6 +267,7 @@ MultipleLinesComposition.compose(PriceEnvelopesIndicator);
  *
  * */
 
+/** @internal */
 namespace PriceEnvelopesIndicator {
     export interface GappedExtensionObject {
         options?: GappedExtensionOptions;
@@ -283,6 +283,7 @@ namespace PriceEnvelopesIndicator {
  *
  * */
 
+/** @internal */
 declare module '../../../Core/Series/SeriesType' {
     interface SeriesTypeRegistry {
         priceenvelopes: typeof PriceEnvelopesIndicator;
@@ -297,6 +298,7 @@ SeriesRegistry.registerSeriesType('priceenvelopes', PriceEnvelopesIndicator);
  *
  * */
 
+/** @internal */
 export default PriceEnvelopesIndicator;
 
 /* *

@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -38,14 +40,12 @@ import H from '../../Core/Globals.js';
 const { composed } = H;
 import Math3D from '../../Core/Math3D.js';
 const { perspective } = Math3D;
-import U from '../../Core/Utilities.js';
-const {
+import {
     addEvent,
     extend,
-    pick,
     pushUnique,
     wrap
-} = U;
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -53,41 +53,72 @@ const {
  *
  * */
 
-declare module '../../Core/Chart/ChartLike' {
-    interface ChartLike {
+/** @internal */
+declare module '../../Core/Chart/ChartBase' {
+    interface ChartBase {
+        /** @internal */
         columnGroup: SVGElement;
     }
 }
 
+/** @internal */
 declare module '../../Core/Series/DataLabelOptions' {
     interface DataLabelOptions {
+        /** @internal */
         outside3dPlot?: (boolean|null);
     }
 }
 
-declare module '../../Core/Series/PointLike' {
-    interface PointLike {
+/** @internal */
+declare module '../../Core/Series/PointBase' {
+    interface PointBase {
+        /** @internal */
         height?: number;
+        /** @internal */
         outside3dPlot?: (boolean|null);
+        /** @internal */
         shapey?: number;
+        /** @internal */
         plot3d?: Position3DObject;
     }
 }
 
-declare module '../../Core/Series/SeriesLike' {
-    interface SeriesLike {
+/** @internal */
+declare module '../../Core/Series/SeriesBase' {
+    interface SeriesBase {
+        /** @internal */
         z: number;
-        /** @requires Series/Column3DSeries */
+        /**
+         * @internal
+         * @requires Series/Column3DSeries
+         */
         translate3dShapes(): void;
     }
 }
 
 declare module '../../Core/Series/SeriesOptions' {
     interface SeriesOptions {
+        /**
+         * Depth of the columns in a 3D column chart.
+         */
         depth?: number;
+
+        /**
+         * 3D columns only. The color of the edges. Similar to `borderColor`,
+         * except it defaults to the same color as the column.
+         */
         edgeColor?: ColorString;
+
+        /**
+         * 3D columns only. The width of the colored edges.
+         */
         edgeWidth?: number;
+
+        /**
+         * The spacing between columns on the Z Axis in a 3D chart.
+         */
         groupZPadding?: number;
+
         inactiveOtherPoints?: boolean;
     }
 }
@@ -98,7 +129,7 @@ declare module '../../Core/Series/SeriesOptions' {
  *
  * */
 
-/** @private */
+/** @internal */
 function columnSeriesTranslate3dShapes(
     this: ColumnSeries
 ): void {
@@ -235,7 +266,7 @@ function columnSeriesTranslate3dShapes(
     series.z = z;
 }
 
-/** @private */
+/** @internal */
 function compose(
     SeriesClass: typeof Series,
     StackItemClass: typeof StackItem
@@ -312,7 +343,7 @@ function compose(
 }
 
 /**
- * @private
+ * @internal
  * @param {Highcharts.Chart} chart
  * Chart with stacks
  * @param {string} stacking
@@ -329,10 +360,9 @@ function retrieveStacks(
         i = 1;
 
     series.forEach(function (s): void {
-        stackNumber = pick(
-            s.options.stack as any,
-            (stacking ? 0 : series.length - 1 - (s.index as any)
-            )
+        stackNumber = (
+            s.options.stack as any ??
+            (stacking ? 0 : series.length - 1 - (s.index as any))
         ); // #3841, #4532
         if (!stacks[stackNumber]) {
             stacks[stackNumber] = { series: [s], position: i };
@@ -346,7 +376,7 @@ function retrieveStacks(
     return stacks;
 }
 
-/** @private */
+/** @internal */
 function onColumnSeriesAfterInit(
     this: ColumnSeries
 ): void {
@@ -361,7 +391,9 @@ function onColumnSeriesAfterInit(
 
         // @todo grouping === true ?
         if (!(typeof grouping !== 'undefined' && !grouping)) {
-            const stacks = retrieveStacks(this.chart, stacking) as AnyRecord,
+            const stacks = retrieveStacks(
+                    this.chart, stacking || void 0
+                ) as AnyRecord,
                 stack: (string|number) = seriesOptions.stack || 0;
 
             let i; // Position within the stack
@@ -390,7 +422,7 @@ function onColumnSeriesAfterInit(
 /**
  * In 3D mode, simple checking for a new shape to animate is not enough.
  * Additionally check if graphic is a group of elements
- * @private
+ * @internal
  */
 function wrapColumnPointHasNewShapeType(
     this: ColumnPoint,
@@ -402,7 +434,7 @@ function wrapColumnPointHasNewShapeType(
         proceed.apply(this, args);
 }
 
-/** @private */
+/** @internal */
 function wrapColumnSeriesAnimate(
     this: ColumnSeries,
     proceed: Function
@@ -460,7 +492,7 @@ function wrapColumnSeriesAnimate(
                 }
             }
 
-            // Redraw datalabels to the correct position
+            // Redraw dataLabels to the correct position
             this.drawDataLabels();
         }
 
@@ -471,7 +503,7 @@ function wrapColumnSeriesAnimate(
  * In case of 3d columns there is no sense to add these columns to a specific
  * series group. If a series is added to a group all columns will have the same
  * zIndex in comparison to another series.
- * @private
+ * @internal
  */
 function wrapColumnSeriesPlotGroup(
     this: (ColumnRangeSeries&ColumnSeries),
@@ -505,7 +537,7 @@ function wrapColumnSeriesPlotGroup(
     return proceed.apply(this, Array.prototype.slice.call(arguments, 1));
 }
 
-/** @private */
+/** @internal */
 function wrapColumnSeriesPointAttribs(
     this: (ColumnSeries|ColumnRangeSeries),
     proceed: Function
@@ -515,7 +547,7 @@ function wrapColumnSeriesPointAttribs(
     if (this.chart.is3d && this.chart.is3d()) {
         // Set the fill color to the fill color to provide a smooth edge
         attr.stroke = this.options.edgeColor || attr.fill;
-        attr['stroke-width'] = pick(this.options.edgeWidth, 1); // #4055
+        attr['stroke-width'] = (this.options.edgeWidth ?? 1); // #4055
     }
 
     return attr;
@@ -524,7 +556,7 @@ function wrapColumnSeriesPointAttribs(
 /**
  * In 3D mode, all column-series are rendered in one main group. Because of that
  * we need to apply inactive state on all points.
- * @private
+ * @internal
  */
 function wrapColumnSeriesSetState(
     this: ColumnSeries,
@@ -547,8 +579,8 @@ function wrapColumnSeriesSetState(
 
 /**
  * When series is not added to group it is needed to change setVisible method to
- * allow correct Legend funcionality. This wrap is basing on pie chart series.
- * @private
+ * allow correct Legend functionality. This wrap is basing on pie chart series.
+ * @internal
  */
 function wrapColumnSeriesSetVisible(
     this: (ColumnRangeSeries&ColumnSeries),
@@ -561,20 +593,19 @@ function wrapColumnSeriesSetVisible(
         for (const point of series.points) {
             point.visible = point.options.visible = vis =
                 typeof vis === 'undefined' ?
-                    !pick(series.visible, point.visible) : vis;
-            (series.options.data as any)[series.data.indexOf(point)] =
-                point.options;
-            if (point.graphic) {
-                point.graphic.attr({
-                    visibility: vis ? 'visible' : 'hidden'
-                });
+                    !(series.visible ?? point.visible) : vis;
+            if (series.options.data) {
+                series.options.data[series.data.indexOf(point)] = point.options;
             }
+            point.graphic?.attr({
+                visibility: vis ? 'visible' : 'hidden'
+            });
         }
     }
     proceed.apply(this, Array.prototype.slice.call(arguments, 1));
 }
 
-/** @private */
+/** @internal */
 function wrapColumnSeriesTranslate(
     this: ColumnSeries,
     proceed: Function
@@ -587,7 +618,7 @@ function wrapColumnSeriesTranslate(
     }
 }
 
-/** @private */
+/** @internal */
 function wrapSeriesAlignDataLabel(
     this: Series,
     proceed: Function,
@@ -607,11 +638,11 @@ function wrapSeriesAlignDataLabel(
         chart.is3d() &&
         this.is('column')
     ) {
-        const series = this as ColumnSeries,
+        const series = this,
             seriesOptions: ColumnSeriesOptions = series.options,
-            inside = pick(options.inside, !!series.options.stacking),
+            inside = (options.inside ?? !!series.options.stacking),
             options3d = chart.options.chart.options3d as any,
-            xOffset = point.pointWidth / 2 || 0;
+            xOffset = (point.pointWidth || 0) / 2;
 
         let dLPosition = {
             x: alignTo.x + xOffset,
@@ -621,7 +652,7 @@ function wrapSeriesAlignDataLabel(
         if (chart.inverted) {
             // Inside dataLabels are positioned according to above
             // logic and there is no need to position them using
-            // non-3D algorighm (that use alignTo.width)
+            // non-3D algorithm (that use alignTo.width)
             if (inside) {
                 alignTo.width = 0;
                 dLPosition.x += (point.shapeArgs as any).height / 2;
@@ -646,12 +677,12 @@ function wrapSeriesAlignDataLabel(
 
 /**
  * Don't use justifyDataLabel when point is outsidePlot.
- * @private
+ * @internal
  */
 function wrapSeriesJustifyDataLabel(
     this: ColumnSeries,
     proceed: Function
-): void {
+): boolean | undefined {
     return (
         !(arguments[2].outside3dPlot) ?
             proceed.apply(this, [].slice.call(arguments, 1)) :
@@ -661,7 +692,7 @@ function wrapSeriesJustifyDataLabel(
 
 /**
  * Added stackLabels position calculation for 3D charts.
- * @private
+ * @internal
  */
 function wrapStackItemGetStackBox(
     this: StackItem,
@@ -721,10 +752,12 @@ function wrapStackItemGetStackBox(
  *
  * */
 
+/** @internal */
 const Column3DComposition = {
     compose
 };
 
+/** @internal */
 export default Column3DComposition;
 
 /* *

@@ -1,12 +1,14 @@
 /* *
  *
- *  (c) 2009-2025 Øystein Moseng
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Øystein Moseng
  *
  *  Accessibility module for Highcharts
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -32,16 +34,11 @@ import D from '../Core/Defaults.js';
 const { defaultOptions } = D;
 import H from '../Core/Globals.js';
 const { doc } = H;
-import U from '../Core/Utilities.js';
-const {
-    addEvent,
-    extend,
-    fireEvent,
-    merge
-} = U;
 import HU from './Utils/HTMLUtilities.js';
 const {
-    removeElement
+    escapeStringForHTML,
+    removeElement,
+    stripHTMLTagsFromString
 } = HU;
 
 import A11yI18n from './A11yI18n.js';
@@ -63,6 +60,7 @@ import highContrastTheme from './HighContrastTheme.js';
 import defaultOptionsA11Y from './Options/A11yDefaults.js';
 import defaultLangOptions from './Options/LangDefaults.js';
 import copyDeprecatedOptions from './Options/DeprecatedOptions.js';
+import { addEvent, extend, fireEvent, merge } from '../Shared/Utilities.js';
 
 /* *
  *
@@ -70,8 +68,8 @@ import copyDeprecatedOptions from './Options/DeprecatedOptions.js';
  *
  * */
 
-declare module '../Core/Chart/ChartLike' {
-    interface ChartLike {
+declare module '../Core/Chart/ChartBase' {
+    interface ChartBase {
         a11yDirty?: boolean;
         accessibility?: Accessibility;
         types?: Array<string>;
@@ -254,10 +252,12 @@ class Accessibility {
         this.keyboardNavigation.update(kbdNavOrder);
 
         // Handle high contrast mode
-        // Should only be applied once, and not if explicitly disabled
+        // Reapply after updates while HC mode is active, but avoid recursion
+        // while the theme itself is being applied through chart.update.
         if (
-            !chart.highContrastModeActive &&
+            !chart.highContrastState?.applying &&
             a11yOptions.highContrastMode !== false && (
+                chart.highContrastState?.active ||
                 whcm.isHighContrastModeActive() ||
                 a11yOptions.highContrastMode === true
             )
@@ -424,6 +424,54 @@ namespace Accessibility {
     }
 
     /**
+     * Inject the accessibility description into the exported SVG as a
+     * Dublin Core RDF metadata block. Runs on the source chart so the
+     * `linkedDescription` selector resolves against the live DOM, then
+     * mutates the export copy's `<svg>` element before its `innerHTML`
+     * is serialized.
+     * @private
+     */
+    function chartOnGetSVG(
+        this: ChartComposition,
+        e: { chartCopy: Chart }
+    ): void {
+        const a11y = this.accessibility;
+        if (!a11y || a11y.zombie) {
+            return;
+        }
+
+        const infoRegions = a11y.components.infoRegions;
+        const text = infoRegions && (
+            infoRegions.getLongdescText() ||
+            infoRegions.getTypeDescriptionText()
+        );
+        if (!text) {
+            return;
+        }
+
+        const safe = escapeStringForHTML(stripHTMLTagsFromString(text, true));
+        if (!safe.trim()) {
+            return;
+        }
+        const box = e.chartCopy.renderer.box;
+
+        box.querySelector(':scope > metadata')?.remove();
+        box.insertAdjacentHTML(
+            'afterbegin',
+            '<metadata>' +
+                '<rdf:RDF ' +
+                    'xmlns:rdf="http://www.w3.org/' +
+                        '1999/02/22-rdf-syntax-ns#" ' +
+                    'xmlns:dc="http://purl.org/dc/elements/1.1/">' +
+                    '<rdf:Description>' +
+                        '<dc:description>' + safe + '</dc:description>' +
+                    '</rdf:Description>' +
+                '</rdf:RDF>' +
+            '</metadata>'
+        );
+    }
+
+    /**
      * Update with chart/series/point updates.
      * @private
      */
@@ -545,6 +593,11 @@ namespace Accessibility {
                 ChartClass as typeof ChartComposition,
                 'update',
                 chartOnUpdate
+            );
+            addEvent(
+                ChartClass as typeof ChartComposition,
+                'getSVG',
+                chartOnGetSVG
             );
 
             // Mark dirty for update

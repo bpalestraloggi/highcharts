@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: LicenseRef-Highcharts
 /**
  * @license Highcharts JS v@product.version@ (@product.date@)
  * @module highcharts/modules/funnel3d
@@ -7,13 +8,15 @@
  *
  * Highcharts funnel module
  *
- * (c) 2010-2025 Kacper Madej
+ * (c) 2010-2026 Highsoft AS
+ * Author: Kacper Madej
  *
- * License: www.highcharts.com/license
+ * A commercial license may be required depending on use,
+ * see www.highcharts.com/license
  */
 'use strict';
 import Highcharts from '../../Core/Globals.js';
+import SVGRenderer from '../../Core/Renderer/SVG/SVGRenderer.js';
 import Funnel3DSeries from '../../Series/Funnel3D/Funnel3DSeries.js';
-import RendererRegistry from '../../Core/Renderer/RendererRegistry.js';
-Funnel3DSeries.compose(RendererRegistry.getRendererType());
+Funnel3DSeries.compose(SVGRenderer);
 export default Highcharts;

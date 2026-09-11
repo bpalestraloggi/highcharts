@@ -1,12 +1,14 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
  *  3D pie series
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -32,12 +34,7 @@ import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 const {
     pie: PieSeries
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const {
-    extend,
-    pick,
-    pushUnique
-} = U;
+import { extend, pushUnique } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -47,7 +44,7 @@ const {
 
 /**
  * Internal types
- * @private
+ * @internal
  */
 declare module '../Pie/PieSeriesOptions' {
     interface PieSeriesOptions {
@@ -88,7 +85,7 @@ class Pie3DSeries extends PieSeries {
      * */
 
     /**
-     * @private
+     * @internal
      */
     public addPoint(): void {
         super.addPoint.apply(this, arguments);
@@ -99,7 +96,7 @@ class Pie3DSeries extends PieSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public animate(init?: boolean): void {
         if (!this.chart.is3d()) {
@@ -119,14 +116,12 @@ class Pie3DSeries extends PieSeries {
             if (init) {
 
                 // Scale down the group and place it in the center
-                (group as any).oldtranslateX = pick(
-                    (group as any).oldtranslateX,
-                    (group as any).translateX
-                );
-                (group as any).oldtranslateY = pick(
-                    (group as any).oldtranslateY,
-                    (group as any).translateY
-                );
+                (group as any).oldtranslateX =
+                    (group as any).oldtranslateX ??
+                    (group as any).translateX;
+                (group as any).oldtranslateY =
+                    (group as any).oldtranslateY ??
+                    (group as any).translateY;
                 attribs = {
                     translateX: center[0],
                     translateY: center[1],
@@ -160,7 +155,7 @@ class Pie3DSeries extends PieSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public getDataLabelPosition(
         point: Pie3DPoint,
@@ -171,7 +166,7 @@ class Pie3DSeries extends PieSeries {
             const options3d = this.chart.options.chart.options3d,
                 shapeArgs = point.shapeArgs,
                 r = (shapeArgs as any).r,
-                // #3240 issue with datalabels for 0 and null values
+                // #3240 issue with dataLabels for 0 and null values
                 a1 = (
                     ((shapeArgs as any).alpha || options3d?.alpha) *
                     deg2rad
@@ -202,7 +197,7 @@ class Pie3DSeries extends PieSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public pointAttribs(point: Pie3DPoint): SVGAttributes {
         const attr = super.pointAttribs.apply(this, arguments),
@@ -210,14 +205,14 @@ class Pie3DSeries extends PieSeries {
 
         if (this.chart.is3d() && !this.chart.styledMode) {
             attr.stroke = options.edgeColor || point.color || this.color;
-            attr['stroke-width'] = pick(options.edgeWidth, 1);
+            attr['stroke-width'] = (options.edgeWidth ?? 1);
         }
 
         return attr;
     }
 
     /**
-     * @private
+     * @internal
      */
     public translate(): void {
         super.translate.apply(this, arguments);
@@ -274,7 +269,7 @@ class Pie3DSeries extends PieSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public drawTracker(): void {
         super.drawTracker.apply(this, arguments);
@@ -336,4 +331,4 @@ export default Pie3DSeries;
  * @apioption plotOptions.pie.depth
  */
 
-''; // Keeps doclets above after transpiledion
+''; // Keeps doclets above after transpilation

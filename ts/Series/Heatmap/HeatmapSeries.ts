@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -38,17 +40,15 @@ const {
 } = SeriesRegistry;
 import SVGRenderer from '../../Core/Renderer/SVG/SVGRenderer.js';
 const { prototype: { symbols } } = SVGRenderer;
-import U from '../../Core/Utilities.js';
-const {
+
+import IU from '../InterpolationUtilities.js';
+import {
     addEvent,
     extend,
     fireEvent,
     isNumber,
-    merge,
-    pick
-} = U;
-
-import IU from '../InterpolationUtilities.js';
+    merge
+} from '../../Shared/Utilities.js';
 const {
     colorFromPoint,
     getContext
@@ -67,8 +67,8 @@ declare module '../../Core/Renderer/SVG/SymbolType' {
     }
 }
 
-declare module '../../Core/Series/SeriesLike' {
-    interface SeriesLike {
+declare module '../../Core/Series/SeriesBase' {
+    interface SeriesBase {
         valueMax?: number;
         valueMin?: number;
     }
@@ -81,7 +81,7 @@ declare module '../../Core/Series/SeriesLike' {
  * */
 
 /**
- * @private
+ * @internal
  * @class
  * @name Highcharts.seriesTypes.heatmap
  *
@@ -133,7 +133,7 @@ class HeatmapSeries extends ScatterSeries {
      * */
 
     /**
-     * @private
+     * @internal
      */
     public drawPoints(): void {
         const
@@ -268,7 +268,15 @@ class HeatmapSeries extends ScatterSeries {
     }
 
     /**
-     * @private
+     * Override to use rectangle by default
+     * @internal
+     */
+    getSymbol(): void {
+        this.symbol = this.options.marker?.symbol || 'rect';
+    }
+
+    /**
+     * @internal
      */
     getExtremes(): DataExtremesObject {
         // Get the extremes from the value data
@@ -289,7 +297,7 @@ class HeatmapSeries extends ScatterSeries {
     /**
      * Override to also allow null points, used when building the k-d-tree for
      * tooltips in boost mode.
-     * @private
+     * @internal
      */
     getValidPoints(
         points?: Array<HeatmapPoint>,
@@ -306,7 +314,7 @@ class HeatmapSeries extends ScatterSeries {
     /**
      * Define hasData function for non-cartesian series. Returns true if the
      * series has points at all.
-     * @private
+     * @internal
      */
     public hasData(): boolean {
         return !!this.dataTable.rowCount;
@@ -314,7 +322,7 @@ class HeatmapSeries extends ScatterSeries {
 
     /**
      * Override the init method to add point ranges on both axes.
-     * @private
+     * @internal
      */
     public init(): void {
         super.init.apply(this, arguments);
@@ -322,7 +330,7 @@ class HeatmapSeries extends ScatterSeries {
         const options = this.options;
 
         // #3758, prevent resetting in setData
-        options.pointRange = pick(options.pointRange, options.colsize || 1);
+        options.pointRange = options.pointRange ?? (options.colsize || 1);
         // General point range
         this.yAxis.axisPointRange = options.rowsize || 1;
 
@@ -341,10 +349,15 @@ class HeatmapSeries extends ScatterSeries {
         if (options.marker && isNumber(options.borderRadius)) {
             options.marker.r = options.borderRadius;
         }
+
+        const canvas = this.canvas = document.createElement('canvas');
+        if (canvas) {
+            this.context = canvas?.getContext('webgpu') as any;
+        }
     }
 
     /**
-     * @private
+     * @internal
      */
     public markerAttribs(
         point: HeatmapPoint,
@@ -405,7 +418,7 @@ class HeatmapSeries extends ScatterSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public pointAttribs(
         point?: HeatmapPoint,
@@ -444,7 +457,7 @@ class HeatmapSeries extends ScatterSeries {
             const stateOptions = merge(
                 seriesOptions.states?.[state],
                 seriesOptions.marker?.states?.[state],
-                point?.options.states?.[state] || {}
+                point?.options.marker?.states?.[state] || {}
             );
 
             attr.fill =
@@ -462,7 +475,7 @@ class HeatmapSeries extends ScatterSeries {
     }
 
     /**
-     * @private
+     * @internal
      */
     public translate(): void {
         const series = this,
@@ -524,13 +537,15 @@ class HeatmapSeries extends ScatterSeries {
         fireEvent(series, 'afterTranslate');
     }
 
-    /* eslint-enable valid-jsdoc */
 
 }
 
 addEvent(HeatmapSeries, 'afterDataClassLegendClick', function (): void {
     this.isDirtyCanvas = true;
     this.drawPoints();
+    if (this.options.enableMouseTracking) {
+        this.drawTracker(); // #23162, set tracker again after points redraw
+    }
 });
 
 /* *
@@ -570,13 +585,11 @@ extend(HeatmapSeries.prototype, {
     trackerGroups: ColorMapComposition.seriesMembers.trackerGroups,
 
     /**
-     * @private
+     * @internal
      */
     alignDataLabel: ColumnSeries.prototype.alignDataLabel,
 
-    colorAttribs: ColorMapComposition.seriesMembers.colorAttribs,
-
-    getSymbol: Series.prototype.getSymbol
+    colorAttribs: ColorMapComposition.seriesMembers.colorAttribs
 
 });
 ColorMapComposition.compose(HeatmapSeries);

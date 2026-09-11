@@ -2,19 +2,21 @@
  *
  *  Grid HeaderCell class
  *
- *  (c) 2020-2025 Highsoft AS
+ *  (c) 2020-2026 Highsoft AS
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  *  Authors:
- *  - Dawid Dragula
+ *  - Dawid Draguła
  *  - Sebastian Bochan
  *
  * */
 
 'use strict';
+
 
 /* *
  *
@@ -23,25 +25,24 @@
  * */
 
 import type { GroupedHeaderOptions } from '../../Options';
+import type { NoIdColumnOptions } from '../Column';
+import type CSSObject from '../../../../Core/Renderer/CSSObject';
 
 import Cell from '../Cell.js';
 import Column from '../Column';
 import Row from '../Row';
-import GridUtils from '../../GridUtils.js';
+import {
+    makeHTMLElement,
+    setHTMLContent,
+    createOptionsProxy,
+    resolveStyleValue,
+    mergeStyleValues
+} from '../../GridUtils.js';
 import ColumnSorting from '../Actions/ColumnSorting.js';
 import Globals from '../../Globals.js';
-import Utilities from '../../../../Core/Utilities.js';
-
-const {
-    makeHTMLElement,
-    setHTMLContent
-} = GridUtils;
-const {
-    fireEvent,
-    merge,
-    isString
-} = Utilities;
-
+import TableHeader from './TableHeader.js';
+import ColumnToolbar from './ColumnToolbar/ColumnToolbar.js';
+import { fireEvent, isString } from '../../../../Shared/Utilities.js';
 
 /* *
  *
@@ -66,9 +67,16 @@ class HeaderCell extends Cell {
     public headerContent?: HTMLElement;
 
     /**
-     * Reference to options in settings header.
+     * The container element of the header cell.
      */
-    public readonly options: Partial<Column.Options> = {};
+    public container?: HTMLDivElement;
+
+    /**
+     * Reference to options taken from the header settings, that will override
+     * the column options.
+     * @internal
+     */
+    public readonly superColumnOptions: Partial<NoIdColumnOptions> = {};
 
     /**
      * List of columns that are subordinated to the header cell.
@@ -79,6 +87,26 @@ class HeaderCell extends Cell {
      * Content value of the header cell.
      */
     public override value: string = '';
+
+    /**
+     * The table header that this header cell belongs to.
+     */
+    public tableHeader: TableHeader;
+
+    /**
+     * The toolbar of the header cell.
+     */
+    toolbar?: ColumnToolbar;
+
+    /**
+     * Key used by the header row to reuse the cell.
+     */
+    public headerCellKey?: string;
+
+    /**
+     * Column resize handle rendered inside this header cell.
+     */
+    private resizeHandle?: HTMLElement;
 
 
     /* *
@@ -106,20 +134,13 @@ class HeaderCell extends Cell {
         columnsTree?: GroupedHeaderOptions[]
     ) {
         super(row, column);
-
-        if (column) {
-            column.header = this;
-            this.columns.push(column);
-        } else if (columnsTree) {
-            const vp = this.row.viewport;
-            const columnIds = vp.grid.getColumnIds(columnsTree, true);
-            for (const columnId of columnIds) {
-                const column = vp.getColumn(columnId);
-                if (column) {
-                    this.columns.push(column);
-                }
-            }
+        const header = this.row.viewport.header;
+        if (!header) {
+            throw new Error('No header found.');
         }
+        this.tableHeader = header;
+
+        this.syncColumns(column, columnsTree);
     }
 
     /* *
@@ -134,20 +155,25 @@ class HeaderCell extends Cell {
     public override init(): HTMLTableCellElement {
         const elem = document.createElement('th', {});
         elem.classList.add(Globals.getClassName('headerCell'));
+        elem.setAttribute('role', 'columnheader');
         return elem;
     }
 
     /**
      * Render the cell container.
      */
-    public override render(): void {
+    public override async render(): Promise<void> {
         const { column } = this;
-        const options = merge(column?.options || {}, this.options);
+        const options = createOptionsProxy(
+            this.superColumnOptions,
+            column?.options ?? this.row.viewport.grid.options?.columnDefaults
+        );
         const headerCellOptions = options.header || {};
-        const isSortableData = options.sorting?.sortable && column?.data;
+        const headerValue = column ?
+            headerCellOptions.formatter?.call(column) : void 0;
 
-        if (headerCellOptions.formatter) {
-            this.value = headerCellOptions.formatter.call(this).toString();
+        if (headerValue) {
+            this.value = headerValue.toString();
         } else if (isString(headerCellOptions.format)) {
             this.value = column ?
                 column.format(headerCellOptions.format) :
@@ -157,54 +183,100 @@ class HeaderCell extends Cell {
         }
 
         // Render content of th element
-        this.row.htmlElement.appendChild(this.htmlElement);
+        if (!this.htmlElement.parentElement) {
+            this.row.htmlElement.appendChild(this.htmlElement);
+        }
+
+        // Create flex container for header content and icons
+        const container = this.container = makeHTMLElement('div', {
+            className: Globals.getClassName('headerCellContainer')
+        }, this.htmlElement);
 
         this.headerContent = makeHTMLElement('span', {
             className: Globals.getClassName('headerCellContent')
-        }, this.htmlElement);
+        }, container);
 
         // Render the header cell element content.
         setHTMLContent(this.headerContent, this.value);
 
         this.htmlElement.setAttribute('scope', 'col');
 
-        if (this.options.className) {
+        if (this.superColumnOptions.className) {
             this.htmlElement.classList.add(
-                ...this.options.className.split(/\s+/g)
+                ...this.superColumnOptions.className.split(/\s+/g)
             );
         }
 
         if (column) {
             this.htmlElement.setAttribute('data-column-id', column.id);
-
-            if (isSortableData) {
-                column.viewport.grid.accessibility?.addSortableColumnHint(
-                    this.headerContent
-                );
-            }
+            this.htmlElement.setAttribute('aria-label', column.id);
 
             // Add user column classname
-            if (column.options.className) {
-                this.htmlElement.classList.add(
-                    ...column.options.className.split(/\s+/g)
-                );
-            }
+            column.applyClassNames(this.htmlElement);
 
             // Add resizing
-            column.viewport.columnsResizer?.renderColumnDragHandles(
-                column,
-                this
-            );
+            this.resizeHandle = column.viewport.columnsResizer
+                ?.renderColumnDragHandles(
+                    column,
+                    this
+                );
+
+            // Add toolbar
+            this.toolbar = new ColumnToolbar(column);
+            this.toolbar.add();
 
             // Add sorting
             this.initColumnSorting();
         }
 
+        // Set alignment in column cells based on column data type
+        this.htmlElement.classList[
+            column?.dataType === 'number' ? 'add' : 'remove'
+        ](Globals.getClassName('rightAlign'));
+
+        // Add custom class name from column options
         this.setCustomClassName(options.header?.className);
 
-        fireEvent(this, 'afterRender', {
-            target: column
-        });
+        this.setCustomStyles(this.getColumnStyles());
+
+        fireEvent(this, 'afterRender', { column });
+
+        return Promise.resolve();
+    }
+
+    /**
+     * Returns merged header styles from defaults and current column options.
+     */
+    private getColumnStyles(): (CSSObject | undefined) {
+        const { column } = this;
+        const { grid } = this.row.viewport;
+
+        if (!column) {
+            const options = createOptionsProxy(
+                this.superColumnOptions,
+                grid.options?.columnDefaults
+            );
+            return {
+                ...resolveStyleValue(options.style),
+                ...resolveStyleValue(options.header?.style)
+            };
+        }
+
+        const rawColumnOptions = grid.columnPolicy
+            .getIndividualColumnOptions(column.id);
+
+        return {
+            ...mergeStyleValues(
+                column,
+                grid.options?.columnDefaults?.style,
+                rawColumnOptions?.style
+            ),
+            ...mergeStyleValues(
+                column,
+                grid.options?.columnDefaults?.header?.style,
+                rawColumnOptions?.header?.style
+            )
+        };
     }
 
     public override reflow(): void {
@@ -223,42 +295,84 @@ class HeaderCell extends Cell {
         // Set the width of the column. Max width is needed for the
         // overflow: hidden to work.
         th.style.width = th.style.maxWidth = width + 'px';
+        this.toolbar?.reflow();
     }
 
-    protected override onKeyDown(e: KeyboardEvent): void {
+    /**
+     * Synchronizes the columns represented by this header cell.
+     *
+     * @param column
+     * The direct column represented by the cell.
+     *
+     * @param columnsTree
+     * The grouped header tree represented by the cell.
+     */
+    public syncColumns(
+        column?: Column,
+        columnsTree?: GroupedHeaderOptions[]
+    ): void {
+        if (this.column?.header === this && this.column !== column) {
+            delete this.column.header;
+        }
+
+        this.column = column;
+        this.columns.length = 0;
+
+        if (column) {
+            column.header = this;
+            this.columns.push(column);
+        } else if (columnsTree) {
+            const vp = this.row.viewport;
+            const columnIds = vp.grid.getColumnIds(columnsTree, false);
+
+            for (let i = 0, iEnd = columnIds.length; i < iEnd; ++i) {
+                const column = vp.getColumn(columnIds[i]);
+
+                if (column && vp.isColumnRendered(column.index)) {
+                    this.columns.push(column);
+                }
+            }
+        }
+    }
+
+    public override onKeyDown(e: KeyboardEvent): void {
         if (!this.column || e.target !== this.htmlElement) {
             return;
         }
 
         if (e.key === 'Enter') {
-            if (this.column.options.sorting?.sortable) {
-                this.column.sorting?.toggle();
-            }
+            this.toolbar?.focus({
+                preventScroll: true
+            });
+            e.preventDefault();
             return;
         }
 
         super.onKeyDown(e);
     }
 
-    protected override onClick(e: MouseEvent): void {
-        const column = this.column;
+    public override onClick(e: MouseEvent): void {
+        const { column } = this;
 
         if (
-            !column || (
-                e.target !== this.htmlElement &&
-                e.target !== column.header?.headerContent
-            ) || column.viewport.columnsResizer?.isResizing
+            !column ||
+            !this.htmlElement.contains(e.target as Node) ||
+            this.toolbar?.container?.contains(e.target as Node) ||
+            column.viewport.columnsResizer?.isResizing
         ) {
             return;
         }
 
-        if (column.options.sorting?.sortable) {
-            column.sorting?.toggle();
+        const grid = column.viewport.grid;
+
+        // Toggle sort only when clicking header text/area, not toolbar icons
+        if (grid.columnPolicy.isColumnSortingEnabled(column.id)) {
+            column.sorting?.toggle(e);
         }
 
         fireEvent(this, 'click', {
             originalEvent: e,
-            target: this.column
+            column
         });
     }
 
@@ -283,22 +397,27 @@ class HeaderCell extends Cell {
     public isLastColumn(): boolean {
         const vp = this.row.viewport;
 
-        const lastViewportColumn = vp.columns[vp.columns.length - 1];
+        const renderedColumns = vp.getRenderedColumns();
+        const lastViewportColumn = renderedColumns[renderedColumns.length - 1];
         const lastCellColumn = this.columns?.[this.columns.length - 1];
 
         return lastViewportColumn === lastCellColumn;
     }
-}
 
+    public override destroy(): void {
+        const columnsResizer = this.column?.viewport.columnsResizer;
 
-/* *
- *
- *  Class Namespace
- *
- * */
+        if (this.resizeHandle && columnsResizer) {
+            columnsResizer.removeHandle(this.resizeHandle);
+            delete this.resizeHandle;
+        }
 
-namespace HeaderCell {
-
+        this.toolbar?.destroy();
+        if (this.column?.header === this) {
+            delete this.column.header;
+        }
+        super.destroy();
+    }
 }
 
 

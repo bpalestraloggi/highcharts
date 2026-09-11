@@ -2,11 +2,13 @@
  *
  *  Highcharts funnel module
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -25,7 +27,15 @@ import type PieDataLabelOptions from '../Pie/PieDataLabelOptions';
  * */
 
 export interface FunnelDataLabelOptions extends PieDataLabelOptions {
-    position?: string;
+    /**
+     * Whether to render the data labels inside the funnel or pyramid shape.
+     * By default, the labels are rendered outside the shape.
+     *
+     * @since 3.0.10
+     *
+     * @product highcharts
+     */
+    inside?: boolean;
 }
 
 /* *

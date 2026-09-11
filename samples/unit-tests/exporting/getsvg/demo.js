@@ -151,7 +151,7 @@ QUnit.test('getSVG', function (assert) {
     Element.prototype.remove = remove;
 });
 
-QUnit.test('Hide label with useHTML', function (assert) {
+QUnit.test('Hide label with useHTML', async function (assert) {
     var chart = Highcharts.chart('container', {
         chart: {
             type: 'pie'
@@ -186,7 +186,7 @@ QUnit.test('Hide label with useHTML', function (assert) {
 
     // Replace with exported SVG
     document.getElementById('output').innerHTML =
-        chart.exporting.getSVGForExport(
+        await chart.exporting.getSVGForExport(
             {},
             {
                 plotOptions: {
@@ -211,7 +211,65 @@ QUnit.test('Hide label with useHTML', function (assert) {
     );
 });
 
-QUnit.test('getSVGForExport XHTML', function (assert) {
+QUnit.test(
+    'getSVGForExport should include custom render labels (#24537)',
+    async function (assert) {
+        const chart = Highcharts.chart('container', {
+            chart: {
+                type: 'pie',
+                events: {
+                    render: context => {
+                        const chart = context.target,
+                            pie = chart.series[0];
+
+                        chart.renderer.box.querySelector(
+                            '.highcharts-custom-centered-label'
+                        )?.remove();
+
+                        if (pie?.center) {
+                            const left = chart.plotLeft + pie.center[0],
+                                top = chart.plotTop + pie.center[1];
+
+                            chart.renderer
+                                .text('<b>TEST</b>', left, top)
+                                .attr({
+                                    'text-anchor': 'middle',
+                                    zIndex: 1
+                                })
+                                .addClass(
+                                    'highcharts-custom-centered-label'
+                                )
+                                .add();
+                        }
+                    }
+                }
+            },
+
+            plotOptions: {
+                pie: {
+                    innerSize: '40%'
+                }
+            },
+
+            series: [{
+                data: [55.02, 26.71, 1.09]
+            }]
+        });
+
+        const svg = await chart.exporting.getSVGForExport();
+        document.getElementById('output').innerHTML = svg;
+
+        assert.strictEqual(
+            document.querySelector(
+                '#output .highcharts-custom-centered-label'
+            )?.textContent,
+            'TEST',
+            'The custom label from chart.events.render should be exported'
+        );
+    }
+);
+
+QUnit.test('getSVGForExport XHTML', async function (assert) {
     var chart = Highcharts.chart('container', {
         chart: {
             type: 'bar'
@@ -243,7 +301,7 @@ QUnit.test('getSVGForExport XHTML', function (assert) {
         ]
     });
 
-    const svg = chart.exporting.getSVGForExport();
+    const svg = await chart.exporting.getSVGForExport();
 
     assert.strictEqual(
         (svg.match(/<img.*?(?=\/>)/gm) || []).length,
@@ -254,5 +312,78 @@ QUnit.test('getSVGForExport XHTML', function (assert) {
         (svg.match(/<br \/>/gm) || []).length,
         chart.series[0].data.length,
         'Should export one self-closing <br /> for each point'
+    );
+});
+
+QUnit.test(
+    'Exporting with Stock Tools and nested SVG (#24754)',
+    async function (assert) {
+        const chart = Highcharts.stockChart('container', {
+            stockTools: {
+                gui: {
+                    enabled: true
+                }
+            },
+            // Testing nested inline SVG.
+            legend: {
+                enabled: true,
+                useHTML: true,
+                labelFormatter: function () {
+                    return (
+                        '<svg width="100" height="25" viewBox="0 0 100 25">' +
+                        '<text><tspan dy="12">' + this.name +
+                        '</tspan></text></svg>'
+                    );
+                }
+            },
+            exporting: {
+                allowHTML: true
+            },
+            series: [{
+                name: 'Installation',
+                data: [43934, 52503, 57177]
+            }]
+        });
+
+        const svg = await chart.exporting.getSVGForExport();
+
+        // Nested SVGs in the legend must not cut off the export mid-element,
+        // which would produce invalid XML (#24754).
+        const parserError = new DOMParser()
+            .parseFromString(svg, 'image/svg+xml')
+            .querySelector('parsererror');
+
+        assert.notOk(
+            parserError,
+            'Exported SVG should be valid, parseable XML (#24754)'
+        );
+
+        // The Stock Tools toolbar is appended to the container after the main
+        // SVG; it must be stripped from the export, not leaked into it.
+        assert.strictEqual(
+            svg.indexOf('highcharts-stocktools-wrapper'),
+            -1,
+            'Stock Tools wrapper should not be present in the exported SVG'
+        );
+    }
+);
+
+QUnit.test('getSVG for boosted chart', async function (assert) {
+    const chart = Highcharts.chart('container', {
+        boost: {
+            useGPUTranslations: true
+        },
+
+        series: [{
+            data: Array.from({ length: 5000 }, (_, i) => i),
+            boostThreshold: 1
+        }]
+
+    });
+
+    assert.strictEqual(
+        chart.exporting.getSVG().indexOf('xlink:href="data:image'),
+        -1,
+        'Boost image href should not be replaced with xlink:href (#24102)'
     );
 });

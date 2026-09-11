@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi, Magdalena Gut
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi, Magdalena Gut
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -17,31 +19,46 @@
  * */
 
 import '../Column/ColumnSeries.js';
-import PatternFill from '../../Extensions/PatternFill.js';
+import { composePatternFill } from '../../Extensions/PatternFill.js';
 
 import type ColorType from '../../Core/Color/ColorType.js';
 import type ColumnSeriesType from '../Column/ColumnSeries';
 import type DataExtremesObject from '../../Core/Series/DataExtremesObject';
 import type PictorialSeriesOptions from './PictorialSeriesOptions';
 
-import A from '../../Core/Animation/AnimationUtilities.js';
+import { animObject } from '../../Core/Animation/AnimationUtilities.js';
 import Chart from '../../Core/Chart/Chart.js';
 import PictorialPoint from './PictorialPoint.js';
+import PictorialSeriesDefaults from './PictorialSeriesDefaults.js';
 import PictorialUtilities from './PictorialUtilities.js';
 import Series from '../../Core/Series/Series.js';
 import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 import StackItem from '../../Core/Axis/Stacking/StackItem.js';
 import SVGAttributes from '../../Core/Renderer/SVG/SVGAttributes.js';
 import SVGRenderer from '../../Core/Renderer/SVG/SVGRenderer.js';
-import U from '../../Core/Utilities.js';
 import { PictorialPathOptions } from './PictorialSeriesOptions';
+import {
+    addEvent,
+    defined,
+    merge,
+    objectEach
+} from '../../Shared/Utilities.js';
+
+/* *
+ *
+ *  Composition
+ *
+ * */
+
+composePatternFill(Chart, Series, SVGRenderer);
+
+/* *
+ *
+ *  Constants
+ *
+ * */
 
 const ColumnSeries: typeof ColumnSeriesType = SeriesRegistry.seriesTypes.column;
-
-PatternFill.compose(Chart, Series, SVGRenderer);
-const {
-    animObject
-} = A;
 
 const {
     getStackMetrics,
@@ -49,19 +66,25 @@ const {
     rescalePatternFill
 } = PictorialUtilities;
 
-const {
-    addEvent,
-    defined,
-    merge,
-    objectEach,
-    pick
-} = U;
+/* *
+ *
+ *  Functions
+ *
+ * */
+
 export interface StackShadowOptions {
     borderColor?: ColorType;
     borderWidth?: number;
     color?: ColorType;
     enabled?: boolean;
 }
+
+/* *
+ *
+ *  Declarations
+ *
+ * */
+
 declare module '../../Core/Axis/AxisOptions' {
     interface AxisOptions {
         stackShadow?: StackShadowOptions;
@@ -77,7 +100,7 @@ declare module '../../Core/Axis/AxisOptions' {
 /**
  * The pictorial series type.
  *
- * @private
+ * @internal
  * @class
  * @name Highcharts.seriesTypes.pictorial
  *
@@ -93,27 +116,7 @@ class PictorialSeries extends ColumnSeries {
 
     public static defaultOptions: PictorialSeriesOptions = merge(
         ColumnSeries.defaultOptions,
-        /**
-         * A pictorial chart uses vector images to represents the data.
-         * The shape of the data point is taken from the path parameter.
-         *
-         * @sample       {highcharts} highcharts/demo/pictorial/
-         *               Pictorial chart
-         *
-         * @extends      plotOptions.column
-         * @since 11.0.0
-         * @product      highcharts
-         * @excluding    allAreas, borderRadius,
-         *               centerInCategory, colorAxis, colorKey, connectEnds,
-         *               connectNulls, crisp, compare, compareBase, dataSorting,
-         *               dashStyle, dataAsColumns, linecap, lineWidth, shadow,
-         *               onPoint
-         * @requires     modules/pictorial
-         * @optionparent plotOptions.pictorial
-         */
-        {
-            borderWidth: 0
-        } as PictorialSeriesOptions
+        PictorialSeriesDefaults
     );
 
     /* *
@@ -136,7 +139,6 @@ class PictorialSeries extends ColumnSeries {
      *
      * */
 
-    /* eslint-disable valid-jsdoc */
 
     /**
      * Animate in the series. Called internally twice. First with the `init`
@@ -261,7 +263,6 @@ class PictorialSeries extends ColumnSeries {
         return extremes;
     }
 
-    /* eslint-enable valid-jsdoc */
 
 }
 
@@ -353,9 +354,9 @@ function renderStackShadow(
             series.getColumnMetrics().width,
             { height, y } = getStackMetrics(series.yAxis, shape),
             shadowOptions = options.stackShadow,
-            strokeWidth = pick(
-                shadowOptions && shadowOptions.borderWidth,
-                series.options.borderWidth,
+            strokeWidth = (
+                (shadowOptions && shadowOptions.borderWidth) ??
+                series.options.borderWidth ??
                 1
             );
 
@@ -382,7 +383,7 @@ function renderStackShadow(
                             path: {
                                 d: shape.definition,
                                 fill: shadowOptions.color ||
-                                    '#dedede',
+                                    'var(--highcharts-neutral-color-20)',
                                 strokeWidth: strokeWidth,
                                 stroke: shadowOptions.borderColor ||
                                 'transparent'
@@ -393,7 +394,7 @@ function renderStackShadow(
                             height: height,
                             patternContentUnits: 'objectBoundingBox',
                             backgroundColor: 'none',
-                            color: '#dedede'
+                            color: 'var(--highcharts-neutral-color-20)'
                         }
                     }
                 })
@@ -550,6 +551,7 @@ addEvent(Chart, 'afterDrillUp', function (): void {
  *
  * */
 
+/** @internal */
 interface PictorialSeries {
     parallelArrays: Array<string>;
     pointArrayMap: Array<string>;
@@ -640,6 +642,7 @@ export default PictorialSeries;
  *    }]
  *    ```
  *
+ * @basic
  * @type      {Array<Array<(number|string),number>|Array<(number|string),number,number>|*>}
  * @extends   series.column.data
  *
@@ -716,7 +719,7 @@ export default PictorialSeries;
  * The color of the `stackShadow` border.
  *
  * @declare   Highcharts.YAxisOptions
- * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+ * @type      {Highcharts.ColorType}
  * @default   transparent
  * @product   highcharts
  * @requires  modules/pictorial
@@ -738,8 +741,8 @@ export default PictorialSeries;
  * The color of the `stackShadow`.
  *
  * @declare   Highcharts.YAxisOptions
- * @type      {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
- * @default   #dedede
+ * @type      {Highcharts.ColorType}
+ * @default   var(--highcharts-neutral-color-20)
  * @product   highcharts
  * @requires  modules/pictorial
  * @apioption yAxis.stackShadow.color
@@ -750,7 +753,7 @@ export default PictorialSeries;
  *
  * @declare   Highcharts.YAxisOptions
  * @type      {boolean}
- * @default   undefined
+ * @default   false
  * @product   highcharts
  * @requires  modules/pictorial
  * @apioption yAxis.stackShadow.enabled

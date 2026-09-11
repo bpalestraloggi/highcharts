@@ -1,0 +1,156 @@
+---
+sidebar_label: "Connectors"
+---
+
+# Connectors
+
+Grid can use `DataConnector` types to load external data into a
+local [`DataTable`](https://www.highcharts.com/docs/grid/data-handling/clientside#datatable). After that initial load, Grid works with the data through the
+local provider model.
+
+In other words, connectors are for loading and preparing data, not for
+server-side sorting, filtering, or pagination. For example, a JSON or CSV file loaded from
+your server is fetched first, then Grid handles filtering, sorting, and
+pagination client-side on the loaded data.
+
+## Supported connector types
+
+The Grid bundles import these connector types:
+
+| Connector | `type` |
+|-----------|--------|
+| CSV | `'CSV'` |
+| JSON | `'JSON'` |
+| Google Sheets | `'GoogleSheets'` |
+| HTML table | `'HTMLTable'` |
+
+These connectors are available in both Grid Lite and Grid Pro.
+
+## Basic example
+
+```js
+Grid.grid('container', {
+    data: {
+        // Connectors load data into a local `DataTable`.
+        connector: {
+            type: 'JSON',
+            dataUrl: '/api/products.json'
+        },
+        // Optional: refresh rows when the connector updates the table.
+        updateOnChange: true
+    },
+    pagination: {
+        enabled: true
+    }
+});
+```
+
+This example fetches data through a JSON connector, but pagination still runs
+client-side after the data has been loaded.
+
+## Multiple data tables
+
+Some connectors expose multiple data tables. Set `dataTableKey` next to the
+connector options to use a specific connector table as the Grid data source.
+If omitted, Grid uses the first connector table.
+
+```js
+Grid.grid('container', {
+    data: {
+        connector: {
+            type: 'JSON',
+            dataUrl: '/api/products.json',
+            dataTables: [{
+                key: 'products'
+            }, {
+                key: 'summary'
+            }]
+        },
+        dataTableKey: 'products'
+    }
+});
+```
+
+## Using Morningstar connectors
+
+Grid can also use built-in Morningstar connector types through
+`data.connector`, for example `MorningstarDWSInvestments`.
+
+Some Morningstar connectors expose multiple data tables. In that case, use
+`dataTableKey` to choose which returned table Grid should render.
+
+```js
+Grid.grid('container', {
+    data: {
+        connector: {
+            type: 'MorningstarDWSInvestments',
+            api: {
+                url: 'https://demo-live-data.highcharts.com',
+                access: {
+                    url: 'https://demo-live-data.highcharts.com/token/oauth',
+                    token: 'token'
+                }
+            },
+            security: {
+                id: '0P00002QN3'
+            },
+            converters: {
+                FixedIncomeSectorsBreakdown: {}
+            }
+        },
+        dataTableKey: 'IncAllSectors'
+    }
+});
+```
+
+For connector-specific setup, authentication, converters, and available table
+keys, see the [Morningstar documentation](https://www.highcharts.com/docs/morningstar/morningstar).
+
+## Using non-bundled connectors
+
+You can also use connectors that are not available as Grid `data.connector`
+types. In that case, load the connector separately and pass the resulting
+`DataTable` to Grid through `data.dataTable`.
+
+```js
+const securityDetailsConnector =
+    new HighchartsConnectors.Morningstar.SecurityDetailsConnector({
+        api: {
+            access: {
+                token: 'your_access_token'
+            }
+        },
+        security: {
+            id: 'F0GBR050DD',
+            idType: 'MSID'
+        },
+        converters: ['PortfolioHoldings']
+    });
+
+await securityDetailsConnector.load();
+
+Grid.grid('container', {
+    data: {
+        dataTable: securityDetailsConnector.dataTables.PortfolioHoldings
+    }
+});
+```
+
+## When to use connectors
+
+Use connectors when:
+
+- your data already comes from CSV, JSON, Google Sheets, or an HTML table
+- you want to reuse Dashboards data-loading infrastructure
+- you want the connector to populate a `DataTable` for local Grid interaction
+
+Use [Server-side data handling](https://www.highcharts.com/docs/grid/data-handling/serverside) instead when your backend should handle sorting, filtering, and pagination on demand.
+
+For full connector details and connector-specific options, read the Dashboards
+documentation on [Data handling / DataConnector](https://www.highcharts.com/docs/dashboards/data-handling#dataconnector).
+
+## API reference
+
+- [`data`](https://api.highcharts.com/grid/data)
+- [`data.local.connector`](https://api.highcharts.com/grid/data.local.connector)
+- [`data.local.dataTableKey`](https://api.highcharts.com/grid/data.local.dataTableKey)

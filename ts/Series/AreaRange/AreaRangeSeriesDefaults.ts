@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -25,7 +27,7 @@ import type AreaRangeSeriesOptions from './AreaRangeSeriesOptions';
  * */
 
 /**
- * The area range series is a carteseian series with higher and lower values for
+ * The area range series is a cartesian series with higher and lower values for
  * each point along an X axis, where the area between the values is shaded.
  *
  * @sample {highcharts} highcharts/demo/arearange/
@@ -39,7 +41,7 @@ import type AreaRangeSeriesOptions from './AreaRangeSeriesOptions';
  * @requires     highcharts-more
  * @optionparent plotOptions.arearange
  *
- * @private
+ * @internal
  */
 const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
 
@@ -47,6 +49,7 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
      * @see [fillColor](#plotOptions.arearange.fillColor)
      * @see [fillOpacity](#plotOptions.arearange.fillOpacity)
      *
+     * @type      {Highcharts.ColorType}
      * @apioption plotOptions.arearange.color
      */
 
@@ -59,6 +62,7 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
      * @see [color](#plotOptions.arearange.color)
      * @see [fillOpacity](#plotOptions.arearange.fillOpacity)
      *
+     * @type      {Highcharts.ColorType}
      * @apioption plotOptions.arearange.fillColor
      */
 
@@ -87,7 +91,7 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
      *
      * @since 2.3.0
      *
-     * @private
+     * @internal
      */
     lineWidth: 1,
 
@@ -107,22 +111,19 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
      *
      * @since 2.3.0
      *
-     * @private
+     * @internal
      */
     trackByArea: true,
 
     /**
      * Extended data labels for range series types. Range series data
-     * labels use no `x` and `y` options. Instead, they have `xLow`,
-     * `xHigh`, `yLow` and `yHigh` options to allow the higher and lower
-     * data label sets individually.
+     * labels can be positioned individually by defining them as an array
+     * and setting `alignToKey` to `high` or `low`.
      *
      * @declare Highcharts.SeriesAreaRangeDataLabelsOptionsObject
-     * @exclude x, y
      * @since   2.3.0
      * @product highcharts highstock
-     *
-     * @private
+     * @apioption plotOptions.arearange.dataLabels
      */
     dataLabels: {
 
@@ -133,40 +134,82 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
         /**
          * X offset of the lower data labels relative to the point value.
          *
+         * Deprecated. Use a data labels array with `alignToKey: 'low'` and
+         * the regular `x` option instead.
+         *
          * @sample highcharts/plotoptions/arearange-datalabels/
          *         Data labels on range series
          * @sample highcharts/plotoptions/arearange-datalabels/
          *         Data labels on range series
+         * @deprecated 13.0.1
          */
         xLow: 0,
 
         /**
          * X offset of the higher data labels relative to the point value.
          *
+         * Deprecated. Use a data labels array with `alignToKey: 'high'` and
+         * the regular `x` option instead.
+         *
          * @sample highcharts/plotoptions/arearange-datalabels/
          *         Data labels on range series
+         * @deprecated 13.0.1
          */
         xHigh: 0,
 
         /**
          * Y offset of the lower data labels relative to the point value.
          *
+         * Deprecated. Use a data labels array with `alignToKey: 'low'` and
+         * the regular `y` option instead.
+         *
          * @sample highcharts/plotoptions/arearange-datalabels/
          *         Data labels on range series
+         * @deprecated 13.0.1
          */
         yLow: 0,
 
         /**
          * Y offset of the higher data labels relative to the point value.
          *
+         * Deprecated. Use a data labels array with `alignToKey: 'high'` and
+         * the regular `y` option instead.
+         *
          * @sample highcharts/plotoptions/arearange-datalabels/
          *         Data labels on range series
+         * @deprecated 13.0.1
          */
         yHigh: 0
 
     }
 
 };
+
+/**
+ * The point key to use for positioning this data label.
+ * Possible values are `low` and `high`. In the legacy array form, the first
+ * label defaults to `high` and the second label defaults to `low`.
+ *
+ * @type      {"low"|"high"}
+ * @validvalue ["low", "high"]
+ * @product   highcharts highstock
+ * @apioption plotOptions.arearange.dataLabels.alignToKey
+ */
+
+/**
+ * Callback JavaScript function to format the data label. Note that if a
+ * `format` is defined, the format takes precedence and the formatter is
+ * ignored.
+ *
+ * By default, the data label renders the value of the point key it is
+ * [aligned to](#plotOptions.arearange.dataLabels.alignToKey). Define a
+ * [format](#plotOptions.arearange.dataLabels.format) or `formatter` to
+ * display other values.
+ *
+ * @type      {Highcharts.DataLabelsFormatterCallbackFunction}
+ * @product   highcharts highstock
+ * @apioption plotOptions.arearange.dataLabels.formatter
+ */
 
 /**
  * A `arearange` series. If the [type](#series.arearange.type) option is not
@@ -184,6 +227,7 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
  * @see [fillColor](#series.arearange.fillColor)
  * @see [fillOpacity](#series.arearange.fillOpacity)
  *
+ * @type      {Highcharts.ColorType}
  * @apioption series.arearange.color
  */
 
@@ -236,6 +280,7 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
  * @sample {highcharts} highcharts/series/data-array-of-objects/
  *         Config objects
  *
+ * @basic
  * @type      {Array<Array<(number|string),number>|Array<(number|string),number,number>|*>}
  * @extends   series.line.data
  * @excluding marker, y
@@ -260,6 +305,7 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
  * @see [color](#series.arearange.color)
  * @see [fillColor](#series.arearange.fillColor)
  *
+ * @type      {number}
  * @default   {highcharts} 0.75
  * @default   {highstock} 0.75
  * @apioption series.arearange.fillOpacity
@@ -267,22 +313,20 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
 
 /**
  * Options for the lower markers of the arearange-like series. When `lowMarker`
- * is not defined, options inherit form the marker.
+ * is not defined, options inherit from the marker.
  *
  * @see [marker](#series.arearange.marker)
  *
+ * @sample {highcharts} highcharts/series-arearange/lowmarker/
+ *         Area range chart with `lowMarker` option
+ *
  * @declare   Highcharts.PointMarkerOptionsObject
  * @extends   plotOptions.series.marker
- * @default   undefined
  * @product   highcharts highstock
  * @apioption plotOptions.arearange.lowMarker
  */
 
 /**
- *
- * @sample {highcharts} highcharts/series-arearange/lowmarker/
- *         Area range chart with `lowMarker` option
- *
  * @declare   Highcharts.PointMarkerOptionsObject
  * @extends   plotOptions.series.marker.symbol
  * @product   highcharts highstock
@@ -313,4 +357,5 @@ const AreaRangeSeriesDefaults: AreaRangeSeriesOptions = {
  *
  * */
 
+/** @internal */
 export default AreaRangeSeriesDefaults;

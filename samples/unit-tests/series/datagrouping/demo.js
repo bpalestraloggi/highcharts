@@ -300,6 +300,37 @@
             newSeries.navigatorSeries.points.length,
             'All points should have the same average value (#11191).'
         );
+
+        const ohlcDataSeries = chart.addSeries({
+            useOhlcData: true,
+            dataGrouping: {
+                approximation: () => [3, 5, 4, 2]
+            },
+            data: [
+                [0, 1, 3, 0, 2],
+                [1, 1, 5, 1, 2],
+                [2, 2, 2, 2, 2]
+            ]
+        });
+
+        assert.strictEqual(
+            typeof ohlcDataSeries.options.dataGrouping.approximation,
+            'function',
+            'A custom dataGrouping.approximation should not be overwritten ' +
+            'with the "ohlc" default when useOhlcData is set (#24692).'
+        );
+
+        assert.deepEqual(
+            [
+                ohlcDataSeries.points[0].open,
+                ohlcDataSeries.points[0].high,
+                ohlcDataSeries.points[0].low,
+                ohlcDataSeries.points[0].close
+            ],
+            [3, 5, 4, 2],
+            'The grouped point should reflect the custom approximation ' +
+            'callback output, not the "ohlc" approximation (#24692).'
+        );
     });
 
     QUnit.test('dataGrouping and multiple series', function (assert) {
@@ -613,6 +644,9 @@
         );
         expectedMin = chart.xAxis[0].toValue(-30, true);
 
+        // With no-x column, fails because data is handled differently when
+        // `setData` runs with pure y-values after previously being set with
+        // explicit x. See https://jsfiddle.net/highcharts/j96zm5uy/
         panTo('left', series.points[7].plotX, series.points[7].plotY, 30);
 
         assert.strictEqual(
@@ -758,6 +792,15 @@
         });
 
         chart.tooltip.refresh([chart.series[0].points[2]]);
+
+        const text = chart.tooltip.label.element.textContent,
+            pos1 = text.indexOf('a121'),
+            pos2 = text.indexOf('a121', pos1 + 1);
+
+        assert.ok(
+            pos2 > -1 && text.indexOf('a121', pos2 + 1) === -1,
+            'Custom name "a121" should be part of the tooltip twice (#9928).'
+        );
 
         assert.strictEqual(
             chart.tooltip.tt.text.textStr.indexOf('a121') > -1,
@@ -1118,6 +1161,19 @@
                 chart.series[1].hasGroupedData,
                 `After zooming to a point where groupinng is no longer needed,
                 it should not be applied.`
+            );
+
+            assert.strictEqual(
+                chart.series[0].closestPointRange,
+                1,
+                `After zooming out of grouping, closestPointRange should reflect
+                the cropped data spacing, not the stale grouped value (#24858).`
+            );
+            assert.strictEqual(
+                chart.series[1].closestPointRange,
+                1,
+                `After zooming out of grouping, closestPointRange should reflect
+                the cropped data spacing, not the stale grouped value (#24858).`
             );
         }
     );

@@ -1,0 +1,49 @@
+/* Menu tokens — application always-on; visual defaults live in theme. */
+.hcg-container .hcg-menu-container,
+.highcharts-light .hcg-container .hcg-menu-container {
+    --ig-menu-item-hover-background: var(--hcg-menu-item-hover-background, transparent);
+    --ig-menu-item-hover-border-color: var(--hcg-menu-item-hover-border-color, transparent);
+    --ig-menu-item-active-background: var(--hcg-menu-item-active-background, transparent);
+    --ig-menu-item-active-border-color: var(--hcg-menu-item-active-border-color, transparent);
+    --ig-menu-item-divider-color: var(--hcg-menu-item-divider-color, transparent);
+    --ig-menu-item-padding: var(--hcg-menu-item-padding, 0);
+    --ig-menu-item-font-size: var(--hcg-menu-item-font-size, inherit);
+    --ig-menu-item-font-weight: var(--hcg-menu-item-font-weight, inherit);
+    --ig-menu-item-border-radius: var(--hcg-menu-item-border-radius, 0);
+    --ig-menu-item-min-height: var(--hcg-menu-item-min-height, 0);
+    --ig-menu-row-gap: var(--hcg-menu-row-gap, 0);
+}
+
+.hcg-container .hcg-menu-container {
+    row-gap: var(--ig-menu-row-gap);
+
+    .hcg-menu-item {
+        padding: var(--ig-menu-item-padding);
+        font-size: var(--ig-menu-item-font-size);
+        font-weight: var(--ig-menu-item-font-weight);
+        border-radius: var(--ig-menu-item-border-radius);
+        min-height: var(--ig-menu-item-min-height);
+    }
+
+    .hcg-menu-item:focus-visible {
+        box-shadow: var(--ig-focus-ring);
+    }
+
+    .hcg-menu-item:focus-visible,
+    .hcg-menu-item:not(:disabled):hover,
+    .hcg-menu-item.highlighted {
+        background: var(--ig-menu-item-hover-background);
+        border-color: var(--ig-menu-item-hover-border-color);
+    }
+
+    .hcg-menu-item.active,
+    .hcg-menu-item.active:hover,
+    .hcg-menu-item.active.highlighted {
+        background: var(--ig-menu-item-active-background);
+        border-color: var(--ig-menu-item-active-border-color);
+    }
+
+    .hcg-menu-divider {
+        border-top-color: var(--ig-menu-item-divider-color);
+    }
+}

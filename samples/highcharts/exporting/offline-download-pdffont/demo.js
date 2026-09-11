@@ -22,15 +22,11 @@ Highcharts.chart('container', {
             enabled: true,
             inside: true
         }
-    }, {
-        type: 'scatter',
-        boostThreshold: 1,
-        data: [300, 399, 300],
-        name: 'Boosted scatter'
     }],
 
     exporting: {
         fallbackToExportServer: false,
+        libURL: 'https://code.highcharts.com/lib/',
         pdfFont: {
             normal: 'https://www.highcharts.com/samples/data/fonts/NotoSans-Regular.ttf',
             bold: 'https://www.highcharts.com/samples/data/fonts/NotoSans-Bold.ttf',

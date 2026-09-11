@@ -2,13 +2,14 @@
  *
  *  Marker clusters module.
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
  *
  *  Author: Wojciech Chmiel
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -21,7 +22,6 @@
  * */
 
 import type AnimationOptions from '../../Core/Animation/AnimationOptions';
-import type MapPointSeries from '../../Series/MapPoint/MapPointSeries';
 import type {
     ClusterAndNoiseObject,
     GroupMapObject,
@@ -43,28 +43,27 @@ import type { PointClickEvent } from '../../Core/Series/PointOptions';
 import type PositionObject from '../../Core/Renderer/PositionObject';
 import type ScatterPoint from '../../Series/Scatter/ScatterPoint';
 import type ScatterSeries from '../../Series/Scatter/ScatterSeries';
+import type ScatterSeriesOptions from '../../Series/Scatter/ScatterSeriesOptions';
 import type Series from '../../Core/Series/Series';
 import type SVGElement from '../../Core/Renderer/SVG/SVGElement';
 
-import A from '../../Core/Animation/AnimationUtilities.js';
-const { animObject } = A;
+import { animObject } from '../../Core/Animation/AnimationUtilities.js';
 import DataTableCore from '../../Data/DataTableCore.js';
 import MarkerClusterDefaults from './MarkerClusterDefaults.js';
 const { cluster: clusterDefaults } = MarkerClusterDefaults;
-import U from '../../Core/Utilities.js';
-const {
-    addEvent,
+import {
     defined,
-    error,
-    isArray,
-    isFunction,
-    isObject,
-    isNumber,
-    merge,
     objectEach,
+    isArray,
+    isNumber,
+    isObject,
+    merge,
+    syncTimeout,
     relativeLength,
-    syncTimeout
-} = U;
+    isFunction,
+    addEvent
+} from '../../Shared/Utilities.js';
+import { error } from '../../Core/Utilities.js';
 
 /* *
  *
@@ -117,10 +116,16 @@ const markerClusterAlgorithms: Record<string, MarkerClusterAlgorithmFunction> = 
             clusters: Array<KmeansClusterObject> = [],
             noise = [],
             group: Record<string, MarkerClusterSplitDataArray> = {},
-            pointMaxDistance = options.processedDistance ||
-                clusterDefaults.layoutAlgorithm.distance,
+            pointMaxDistance = Number(
+                options.processedDistance ??
+                relativeLength(
+                    options.distance ||
+                    clusterDefaults.layoutAlgorithm.distance,
+                    series.chart.plotWidth
+                )
+            ),
             iterations = options.iterations,
-            // Max pixel difference beetwen new and old cluster position.
+            // Max pixel difference between new and old cluster position.
             maxClusterShift = 1;
 
         let currentIteration = 0,
@@ -130,7 +135,7 @@ const markerClusterAlgorithms: Record<string, MarkerClusterAlgorithmFunction> = 
             tempPos,
             pointClusterDistance: Array<Record<string, number>> = [];
 
-        options.processedGridSize = options.processedDistance;
+        options.processedGridSize = pointMaxDistance;
 
         // Use grid method to get groupedData object.
         const groupedData = series.markerClusterAlgorithms ?
@@ -265,16 +270,20 @@ const markerClusterAlgorithms: Record<string, MarkerClusterAlgorithmFunction> = 
         options: MarkerClusterLayoutAlgorithmOptions
     ): Record<string, MarkerClusterSplitDataArray> {
         const series = this,
-            pointMaxDistance = options.processedDistance ||
-                clusterDefaults.layoutAlgorithm.gridSize,
+            pointMaxDistance = Number(
+                options.processedDistance ??
+                relativeLength(
+                    options.distance ||
+                    clusterDefaults.layoutAlgorithm.gridSize,
+                    series.chart.plotWidth
+                )
+            ),
 
             extremes = series.getRealExtremes(),
             clusterMarkerOptions = (series.options.cluster || {}).marker;
 
         let distance,
-            group: (Record<string, MarkerClusterSplitDataArray>) = {},
-            offset,
-            radius;
+            group: (Record<string, MarkerClusterSplitDataArray>) = {};
 
         if (!series.markerClusterInfo || (
             series.initMaxX && series.initMaxX < extremes.maxX ||
@@ -316,15 +325,14 @@ const markerClusterAlgorithms: Record<string, MarkerClusterAlgorithmFunction> = 
                         Math.pow(dataPointPx.y - clusterPx.y, 2)
                     );
 
-                    if (cluster.clusterZone?.marker?.radius) {
-                        radius = cluster.clusterZone.marker.radius;
-                    } else if (clusterMarkerOptions?.radius) {
-                        radius = clusterMarkerOptions.radius;
-                    } else {
-                        radius = clusterDefaults.marker.radius;
-                    }
+                    const radius = (
+                        cluster.clusterZone?.marker?.radius ??
+                        clusterMarkerOptions?.radius ??
+                        clusterDefaults.marker.radius ??
+                        0
+                    );
 
-                    offset = pointMaxDistance - radius >= 0 ?
+                    const offset = pointMaxDistance - radius >= 0 ?
                         pointMaxDistance - radius : radius;
 
                     if (
@@ -368,7 +376,7 @@ let baseGeneratePoints: ScatterSeries['generatePoints'],
     /**
      * Points that ids are included in the oldPointsStateId array are hidden
      * before animation. Other ones are destroyed.
-     * @private
+     * @internal
      */
     oldPointsStateId: Array<string> = [],
     stateIdCounter = 0;
@@ -379,7 +387,10 @@ let baseGeneratePoints: ScatterSeries['generatePoints'],
  *
  * */
 
-/** @private */
+/**
+ * Compose marker cluster scatter hooks.
+ * @internal
+ */
 function compose(
     highchartsDefaultOptions: Options,
     ScatterSeriesClass: typeof ScatterSeries
@@ -422,7 +433,7 @@ function compose(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function destroyOldPoints(
     oldState: Record<string, MarkerClusterPointsState>
@@ -434,7 +445,7 @@ function destroyOldPoints(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function fadeInElement(
     elem: SVGElement,
@@ -446,9 +457,9 @@ function fadeInElement(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
-function fadeInNewPointAndDestoryOld(
+function fadeInNewPointAndDestroyOld(
     newPointObj: MarkerClusterPointsState,
     oldPoints: Array<MarkerClusterPointsState>,
     animation: (boolean|Partial<AnimationOptions>),
@@ -465,7 +476,7 @@ function fadeInNewPointAndDestoryOld(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function fadeInStatePoint(
     stateObj: MarkerClusterPointsState,
@@ -489,7 +500,7 @@ function fadeInStatePoint(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function getClusterPosition(
     points: Array<PositionObject>
@@ -513,7 +524,7 @@ function getClusterPosition(
 /**
  * Util function.Prepare array with sorted data objects to be compared in
  * getPointsState method.
- * @private
+ * @internal
  */
 function getDataState(
     clusteredData: MarkerClusterInfoObject,
@@ -543,7 +554,7 @@ function getDataState(
 
 /**
  * Util function. Generate unique stateId for a state element.
- * @private
+ * @internal
  */
 function getStateId(): string {
     return Math.random().toString(36).substring(2, 7) + '-' + stateIdCounter++;
@@ -551,7 +562,7 @@ function getStateId(): string {
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function hideStatePoint(
     stateObj: MarkerClusterPointsState,
@@ -569,7 +580,10 @@ function hideStatePoint(
     }
 }
 
-/** @private */
+/**
+ * Handle point drill-to-cluster click.
+ * @internal
+ */
 function onPointDrillToCluster(
     this: ScatterPoint,
     event: PointClickEvent
@@ -584,7 +598,8 @@ function onPointDrillToCluster(
             series = point.series,
             { xAxis, yAxis, chart } = series,
             { inverted, mapView, pointer } = chart,
-            drillToCluster = series.options.cluster?.drillToCluster;
+            drillToCluster = (series.options as ScatterSeriesOptions)
+                .cluster?.drillToCluster;
 
         if (drillToCluster && point.clusteredData) {
             const sortedDataX = point.clusteredData
@@ -649,7 +664,7 @@ function onPointDrillToCluster(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function pixelsToValues(
     series: Series,
@@ -665,7 +680,10 @@ function pixelsToValues(
     };
 }
 
-/** @private */
+/**
+ * Animate cluster point transitions.
+ * @internal
+ */
 function seriesAnimateClusterPoint(
     this: ScatterSeries,
     clusterObj: ClusterAndNoiseObject
@@ -687,7 +705,7 @@ function seriesAnimateClusterPoint(
         offset = 0,
         newX = 0,
         newY = 0,
-        isOldPointGrahic = false,
+        isOldPointGraphic = false,
         isCbHandled = false;
 
     if (oldState && newState) {
@@ -770,7 +788,7 @@ function seriesAnimateClusterPoint(
                     oldPoints.push(oldPointObj);
 
                     if (oldPointObj.point?.graphic) {
-                        isOldPointGrahic = true;
+                        isOldPointGraphic = true;
                         oldPointObj.point.graphic.show();
                         oldPointObj.point.graphic.animate({
                             x: newX - (oldPointObj.point.graphic.radius || 0),
@@ -778,7 +796,7 @@ function seriesAnimateClusterPoint(
                             opacity: 0.4
                         }, animation, function (): void {
                             isCbHandled = true;
-                            fadeInNewPointAndDestoryOld(
+                            fadeInNewPointAndDestroyOld(
                                 newPointObj, oldPoints, animation, 0.7
                             );
                         });
@@ -802,15 +820,15 @@ function seriesAnimateClusterPoint(
             // Make sure point is faded in.
             syncTimeout(function (): void {
                 if (!isCbHandled) {
-                    fadeInNewPointAndDestoryOld(
+                    fadeInNewPointAndDestroyOld(
                         newPointObj, oldPoints, animation, 0.85
                     );
                 }
             }, animDuration);
 
-            if (!isOldPointGrahic) {
+            if (!isOldPointGraphic) {
                 syncTimeout(function (): void {
-                    fadeInNewPointAndDestoryOld(
+                    fadeInNewPointAndDestroyOld(
                         newPointObj, oldPoints, animation, 0.1
                     );
                 }, animDuration / 2);
@@ -821,7 +839,7 @@ function seriesAnimateClusterPoint(
 
 /**
  * Destroy clustered data points.
- * @private
+ * @internal
  */
 function seriesDestroyClusteredData(
     this: ScatterSeries
@@ -836,7 +854,7 @@ function seriesDestroyClusteredData(
 
 /**
  * Override the generatePoints method by adding a reference to grouped data.
- * @private
+ * @internal
  */
 function seriesGeneratePoints(
     this: ScatterSeries
@@ -874,8 +892,8 @@ function seriesGeneratePoints(
     // series flow, this is not done until the `translate` method because the
     // resulting [x, y] position depends on inset positions in the MapView.
     if (mapView && series.is('mappoint') && xData && yData) {
-        (series as MapPointSeries).options.data?.forEach((p, i): void => {
-            const xy = (series as MapPointSeries).projectPoint(p);
+        series.options.data?.forEach((p, i): void => {
+            const xy = series.projectPoint(p);
             if (xy) {
                 xData[i] = xy.x;
                 yData[i] = xy.y;
@@ -1076,7 +1094,10 @@ function seriesGeneratePoints(
     }
 }
 
-/** @private */
+/**
+ * Calculate distances from a point to all clusters.
+ * @internal
+ */
 function seriesGetClusterDistancesFromPoint(
     this: ScatterSeries,
     clusters: Array<KmeansClusterObject>,
@@ -1104,7 +1125,10 @@ function seriesGetClusterDistancesFromPoint(
     );
 }
 
-/** @private */
+/**
+ * Build clustered data from grouped data.
+ * @internal
+ */
 function seriesGetClusteredData(
     this: ScatterSeries,
     groupedData: Record<string, MarkerClusterSplitDataArray>,
@@ -1188,10 +1212,10 @@ function seriesGetClusteredData(
                         options.layoutAlgorithm
                     ),
                     defaultRadius: marker.radius || 3 + (marker.lineWidth || 0),
-                    clusterRadius: (zoneOptions && zoneOptions.radius) ?
-                        zoneOptions.radius :
-                        (options.marker || {}).radius ||
-                            clusterDefaults.marker.radius
+                    clusterRadius: zoneOptions?.radius ??
+                        options.marker?.radius ??
+                        clusterDefaults.marker.radius ??
+                        0
                 });
             } else {
                 clusterPos = {
@@ -1292,7 +1316,10 @@ function seriesGetClusteredData(
     };
 }
 
-/** @private */
+/**
+ * Resolve plot offsets for clustering calculations.
+ * @internal
+ */
 function seriesGetGridOffset(
     this: ScatterSeries
 ): Record<string, number> {
@@ -1322,7 +1349,7 @@ function seriesGetGridOffset(
 /**
  * Point state used when animation is enabled to compare and bind old points
  * with new ones.
- * @private
+ * @internal
  */
 function seriesGetPointsState(
     this: ScatterSeries,
@@ -1387,7 +1414,10 @@ function seriesGetPointsState(
     return state;
 }
 
-/** @private */
+/**
+ * Resolve the real extremes for the cluster calculations.
+ * @internal
+ */
 function seriesGetRealExtremes(
     this: ScatterSeries
 ): Record<string, number> {
@@ -1415,7 +1445,10 @@ function seriesGetRealExtremes(
     };
 }
 
-/** @private */
+/**
+ * Normalize grid size based on the current scale.
+ * @internal
+ */
 function seriesGetScaledGridSize(
     this: ScatterSeries,
     options: MarkerClusterLayoutAlgorithmOptions
@@ -1423,8 +1456,13 @@ function seriesGetScaledGridSize(
     const series = this,
         xAxis = series.xAxis,
         mapView = series.chart.mapView,
-        processedGridSize = options.processedGridSize ||
-            clusterDefaults.layoutAlgorithm.gridSize;
+        processedGridSize = Number(
+            options.processedGridSize ??
+            relativeLength(
+                options.gridSize || clusterDefaults.layoutAlgorithm.gridSize,
+                series.chart.plotWidth
+            )
+        );
 
     let search = true,
         k = 1,
@@ -1443,7 +1481,10 @@ function seriesGetScaledGridSize(
     const gridSize = mapView ?
         series.gridValueSize * mapView.getScale() :
         xAxis.toPixels(series.gridValueSize) - xAxis.toPixels(0);
-    const scale = +(processedGridSize / gridSize).toFixed(14);
+
+    // Fix, #19740: Prevent division by zero error.
+    const scale = gridSize !== 0 ?
+        Math.abs(+(processedGridSize / gridSize).toFixed(14)) : 1;
 
     // Find the level and its divider.
     while (search && scale !== 1) {
@@ -1467,7 +1508,7 @@ function seriesGetScaledGridSize(
 
 /**
  * Hide clustered data points.
- * @private
+ * @internal
  */
 function seriesHideClusteredData(
     this: ScatterSeries
@@ -1499,7 +1540,7 @@ function seriesHideClusteredData(
 
 /**
  * Check if user algorithm result is valid groupedDataObject.
- * @private
+ * @internal
  */
 function seriesIsValidGroupedDataObject(
     groupedData: Record<string, MarkerClusterSplitDataArray>
@@ -1529,7 +1570,10 @@ function seriesIsValidGroupedDataObject(
     return result;
 }
 
-/** @private */
+/**
+ * Resolve a collision-free cluster position.
+ * @internal
+ */
 function seriesPreventClusterCollisions(
     this: ScatterSeries,
     props: MarkerClusterPreventCollisionObject
@@ -1630,7 +1674,7 @@ function seriesPreventClusterCollisions(
                         } else if (clusterMarkerOptions?.radius) {
                             radius = clusterMarkerOptions.radius;
                         } else {
-                            radius = clusterDefaults.marker.radius;
+                            radius = clusterDefaults.marker.radius ?? 0;
                         }
                     }
                 }
@@ -1680,7 +1724,7 @@ function seriesPreventClusterCollisions(
 
 /**
  * Util function.
- * @private
+ * @internal
  */
 function valuesToPixels(
     series: Series,
@@ -1702,8 +1746,10 @@ function valuesToPixels(
  *
  * */
 
+/** @internal */
 const MarkerClusterScatter = {
     compose
 };
 
+/** @internal */
 export default MarkerClusterScatter;

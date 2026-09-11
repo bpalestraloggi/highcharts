@@ -79,6 +79,11 @@ Highcharts.setOptions({
     chart: {
         animation: false
     },
+    colorAxis: {
+        marker: {
+            animation: false
+        }
+    },
     lang: {
         locale: 'en-GB'
     },
@@ -147,6 +152,42 @@ Highcharts.callbacksRaw = Highcharts.Chart.prototype.callbacks.slice(0);
 Highcharts.radialDefaultOptionsRaw =
     JSON.stringify(Highcharts.RadialAxis.radialDefaultOptions);
 
+function resolveJSONSource(url) {
+    if (!url || !window.JSONSources) {
+        return undefined;
+    }
+
+    var sources = window.JSONSources;
+    var variants = [url];
+    var hashIndex = url.indexOf('#');
+
+    if (hashIndex >= 0) {
+        variants.push(url.slice(0, hashIndex));
+    }
+
+    var queryIndex = url.indexOf('?');
+
+    if (queryIndex >= 0) {
+        variants.push(url.slice(0, queryIndex));
+    }
+
+    var withoutTrailingSlash = url.replace(/\/+$/, '');
+
+    if (withoutTrailingSlash && withoutTrailingSlash !== url) {
+        variants.push(withoutTrailingSlash);
+    }
+
+    for (var i = 0; i < variants.length; ++i) {
+        var candidate = variants[i];
+
+        if (candidate && Object.prototype.hasOwnProperty.call(sources, candidate)) {
+            return sources[candidate];
+        }
+    }
+
+    return undefined;
+}
+
 // Hijack XHMLHttpRequest to run local JSON sources
 var open = XMLHttpRequest.prototype.open;
 var send = XMLHttpRequest.prototype.send;
@@ -156,7 +197,8 @@ XMLHttpRequest.prototype.open = function (type, url) {
 }
 
 XMLHttpRequest.prototype.send = function () {
-    var localData = this.requestURL && window.JSONSources[this.requestURL];
+    var localData = resolveJSONSource(this.requestURL);
+
     if (localData) {
         Object.defineProperty(this, 'readyState', {
             get: function () { return 4; }
@@ -176,9 +218,18 @@ XMLHttpRequest.prototype.send = function () {
 
 // Hijack fetch to run local sources.
 if (window.Promise) {
-    window.fetch = function (url) {
+    var nativeFetch = typeof window.fetch === 'function' ?
+        window.fetch.bind(window) :
+        undefined;
+
+    window.fetch = function (input, init) {
+        var requestURL = typeof input === 'string' ?
+            input :
+            (input && input.url ? input.url : '' + input);
+
         return new Promise(function (resolve, reject) {
-            var localData = url && window.JSONSources[url];
+            var localData = resolveJSONSource(requestURL);
+
             if (localData) {
                 // Fake the return
                 resolve({
@@ -186,7 +237,7 @@ if (window.Promise) {
                     status: 200,
                     statusText: 'OK',
                     type: 'basic',
-                    url: url,
+                    url: requestURL,
                     json: function () {
                         return localData;
                     },
@@ -194,8 +245,13 @@ if (window.Promise) {
                         return localData;
                     }
                 });
+            } else if (nativeFetch) {
+                nativeFetch(input, init).then(resolve).catch(reject);
             } else {
-                reject('Sample error, URL "' + url + '" missing in JSONSources (trying to fetch)');
+                reject(
+                    'Sample error, URL "' + requestURL +
+                    '" missing in JSONSources (trying to fetch)'
+                );
             }
         });
     };
@@ -509,6 +565,15 @@ if (window.QUnit) {
             }
             Highcharts.addEvent = origAddEvent;
 
+            // Remove Boost's literal colors
+            if (Highcharts.Color) {
+                Object.keys(Highcharts.Color.names).forEach(function (key) {
+                    if (key.indexOf('var(--highcharts-color-') === 0) {
+                        delete Highcharts.Color.names[key];
+                    }
+                });
+            }
+
             // Reset defaultOptions and callbacks if those are mutated. In
             // karma-konf, the scriptBody is inspected to see if these expensive
             // operations are necessary. Visual tests only.
@@ -552,6 +617,7 @@ Highcharts.prepareShot = function (chart) {
                     points[i].shapeArgs.d &&
                     points[i].shapeArgs.d.length === 0
                 ) &&
+                points[i].series.options.enableMouseTracking !== false &&
                 typeof points[i].onMouseOver === 'function'
             ) {
                 points[i].onMouseOver();

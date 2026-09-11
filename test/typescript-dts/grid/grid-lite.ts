@@ -6,7 +6,7 @@
  *
  * */
 
-import * as Grid from '@highcharts/grid/grid-lite';
+import * as Grid from '@highcharts/grid/es-modules/masters/grid-lite.src';
 
 test_grid();
 
@@ -14,6 +14,30 @@ test_grid();
  * Tests grid options.
  */
 function test_grid() {
+
+    Grid.CellContextMenuBuiltInActions.registerBuiltInAction(
+        'showCellValue',
+        {
+            getLabel: function () {
+                return 'Show cell value';
+            },
+            icon: 'checkmark',
+            onClick: function (context): void {
+                context.cell.row.id;
+            }
+        }
+    );
+
+    Grid.CellContextMenuBuiltInActions.registerBuiltInGroup(
+        'sampleActions',
+        {
+            isVisible: function (context) {
+                context.grid;
+                return true;
+            },
+            items: ['showCellValue']
+        }
+    );
 
     const dataTable = new Grid.DataTable({
         columns: {
@@ -23,8 +47,11 @@ function test_grid() {
         }
     });
 
-    Grid.grid('container', {
-        dataTable,
+    const grid = Grid.grid('container', {
+        data: {
+            dataTable,
+            idColumn: 'x'
+        },
         header: [{
             format: 'grouped header',
             columns: [{
@@ -36,13 +63,38 @@ function test_grid() {
         rendering: {
             columns: {
                 resizing: {
-                    mode: 'fixed'
+                    mode: 'distributed'
+                }
+            }
+        },
+        columnDefaults: {
+            cells: {
+                contextMenu: {
+                    enabled: true,
+                    items: [
+                        {
+                            label: 'Test',
+                            onClick: function () {
+                                // noop
+                            }
+                        }
+                    ]
                 }
             }
         },
         columns: [{
             id: 'hidden',
             enabled: false
-        }]
+        }],
+        responsive: {
+            rules: [{
+                condition: {
+                    minHeight: 500
+                },
+                gridOptions: {
+                    header: ['x']
+                }
+            }]
+        }
     });
 }

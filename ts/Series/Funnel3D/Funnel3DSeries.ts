@@ -2,13 +2,14 @@
  *
  *  Highcharts funnel3d series module
  *
- *  (c) 2010-2025 Highsoft AS
+ *  (c) 2010-2026 Highsoft AS
  *
  *  Author: Kacper Madej
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -39,13 +40,7 @@ const {
         column: ColumnSeries
     }
 } = SeriesRegistry;
-import U from '../../Core/Utilities.js';
-const {
-    extend,
-    merge,
-    pick,
-    relativeLength
-} = U;
+import { extend, merge, relativeLength } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -111,23 +106,20 @@ class Funnel3DSeries extends ColumnSeries {
         const series = this,
             dlBoxRaw = point.dlBoxRaw,
             inverted = series.chart.inverted,
-            below = (point.plotY as any) > pick(
-                series.translatedThreshold,
-                series.yAxis.len
-            ),
-            inside = pick(options.inside, !!series.options.stacking),
+            below =
+                (point.plotY as any) >
+                (series.translatedThreshold ?? series.yAxis.len),
+            inside = (options.inside ?? !!series.options.stacking),
             dlBox: BBoxObject = {
                 x: dlBoxRaw.x,
                 y: dlBoxRaw.y,
                 height: 0
             } as any;
 
-        options.align = pick(
-            options.align,
+        options.align = options.align ?? (
             !inverted || inside ? 'center' : below ? 'right' : 'left'
         );
-        options.verticalAlign = pick(
-            options.verticalAlign,
+        options.verticalAlign = options.verticalAlign ?? (
             inverted || inside ? 'middle' : below ? 'top' : 'bottom'
         );
 
@@ -276,10 +268,9 @@ class Funnel3DSeries extends ColumnSeries {
             h = y3 - y1;
             shapeArgs = {
                 // For fill setter
-                gradientForSides: pick(
-                    point.options.gradientForSides,
-                    options.gradientForSides
-                ),
+                gradientForSides:
+                    point.options.gradientForSides ??
+                    options.gradientForSides,
 
                 x: centerX,
                 y: y1,

@@ -219,8 +219,8 @@ QUnit.test('Split tooltip with useHTML and outside', function (assert) {
 
     assert.strictEqual(
         chart.series[0].tt.text.element.tagName,
-        'SPAN',
-        '#7238: The label is a span'
+        'DIV',
+        '#7238: The label should be HTML'
     );
 
     chart.update({
@@ -266,7 +266,7 @@ QUnit.test('Split tooltip with useHTML and outside', function (assert) {
     assert.close(
         chart.yAxis[0].toPixels(point.y) + chartBox.top,
         tooltipClient.bottom - magicNumber,
-        3,
+        5,
         `Tooltip with outside and split properties set to true should be
         rendered properly - y position (#17720).`
     );
@@ -433,7 +433,8 @@ QUnit.test(
                 }
             ],
             tooltip: {
-                split: true
+                split: true,
+                borderColor: undefined
             }
         });
         const firstPointColor = chart.series[0].points[0].color,

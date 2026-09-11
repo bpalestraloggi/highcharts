@@ -2,11 +2,13 @@
  *
  *  Networkgraph series
  *
- *  (c) 2010-2025 Paweł Fus
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Paweł Fus
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -30,15 +32,13 @@ const { win } = H;
 import GraphLayout from '../GraphLayoutComposition.js';
 import QuadTree from './QuadTree.js';
 import QuadTreeNode from './QuadTreeNode.js';
-import U from '../../Core/Utilities.js';
-const {
+import VerletIntegration from './VerletIntegration.js';
+import {
     clamp,
     defined,
-    isFunction,
     fireEvent,
-    pick
-} = U;
-import VerletIntegration from './VerletIntegration.js';
+    isFunction
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -131,15 +131,13 @@ class ReingoldFruchtermanLayout {
 
         this.enableSimulation = options.enableSimulation;
 
-        this.attractiveForce = pick(
-            options.attractiveForce,
-            this.integration.attractiveForceFunction
-        );
+        this.attractiveForce =
+            options.attractiveForce ??
+            this.integration.attractiveForceFunction;
 
-        this.repulsiveForce = pick(
-            options.repulsiveForce,
-            this.integration.repulsiveForceFunction
-        );
+        this.repulsiveForce =
+            options.repulsiveForce ??
+            this.integration.repulsiveForceFunction;
 
         this.approximation = options.approximation;
     }
@@ -147,7 +145,7 @@ class ReingoldFruchtermanLayout {
     public updateSimulation(
         enable?: boolean
     ): void {
-        this.enableSimulation = pick(enable, this.options.enableSimulation);
+        this.enableSimulation = (enable ?? this.options.enableSimulation);
     }
 
     public start(): void {
@@ -325,10 +323,7 @@ class ReingoldFruchtermanLayout {
     public setMaxIterations(
         maxIterations?: number
     ): void {
-        this.maxIterations = pick(
-            maxIterations,
-            this.options.maxIterations
-        );
+        this.maxIterations = (maxIterations ?? this.options.maxIterations);
     }
 
     public setTemperature(): void {
@@ -406,7 +401,7 @@ class ReingoldFruchtermanLayout {
 
         // Start with identified root nodes an sort the nodes by their
         // hierarchy. In trees, this ensures that branches don't cross
-        // eachother.
+        // each other.
         for (const rootNode of rootNodes) {
             sortedNodes.push(rootNode);
             addToNodes(rootNode);
@@ -431,14 +426,12 @@ class ReingoldFruchtermanLayout {
         // as a cluster in the middle
         for (let i = 0, iEnd = sortedNodes.length; i < iEnd; ++i) {
             node = sortedNodes[i];
-            node.plotX = node.prevX = pick(
-                node.plotX,
-                box.width / 2 + (radius as any) * Math.cos(i * angle)
-            );
-            node.plotY = node.prevY = pick(
-                node.plotY,
-                box.height / 2 + (radius as any) * Math.sin(i * angle)
-            );
+            node.plotX = node.prevX =
+                node.plotX ??
+                box.width / 2 + (radius as any) * Math.cos(i * angle);
+            node.plotY = node.prevY =
+                node.plotY ??
+                box.height / 2 + (radius as any) * Math.sin(i * angle);
 
             node.dispX = 0;
             node.dispY = 0;
@@ -466,14 +459,9 @@ class ReingoldFruchtermanLayout {
         // Initial positions:
         for (let i = 0, iEnd = nodes.length; i < iEnd; ++i) {
             node = nodes[i];
-            node.plotX = node.prevX = pick(
-                node.plotX,
-                box.width * unrandom(i)
-            );
-            node.plotY = node.prevY = pick(
-                node.plotY,
-                box.height * unrandom(nodesLength + i)
-            );
+            node.plotX = node.prevX = (node.plotX ?? box.width * unrandom(i));
+            node.plotY = node.prevY =
+                node.plotY ?? box.height * unrandom(nodesLength + i);
 
             node.dispX = 0;
             node.dispY = 0;
@@ -821,7 +809,7 @@ namespace ReingoldFruchtermanLayout {
         approximation?: ('barnes-hut'|'none');
 
         /**
-         * Attraction force applied on a node which is conected to another
+         * Attraction force applied on a node which is connected to another
          * node by a link. Passed are two arguments:
          * - `d` - which is current distance between two nodes
          * - `k` - which is desired distance between two nodes
@@ -970,7 +958,7 @@ namespace ReingoldFruchtermanLayout {
 
         /**
          * Barnes-Hut approximation only.
-         * Deteremines when distance between cell and node is small enough
+         * Determines when distance between cell and node is small enough
          * to calculate forces. Value of `theta` is compared directly with
          * quotient `s / d`, where `s` is the size of the cell, and `d` is
          * distance between center of cell's mass and currently compared

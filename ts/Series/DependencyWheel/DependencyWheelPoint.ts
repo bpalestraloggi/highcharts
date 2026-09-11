@@ -2,11 +2,13 @@
  *
  *  Dependency wheel module
  *
- *  (c) 2018-2025 Torstein Honsi
+ *  (c) 2018-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -28,11 +30,7 @@ import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 const {
     sankey: { prototype: { pointClass: SankeyPoint } }
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const {
-    pInt,
-    wrap
-} = U;
+import { pInt, wrap } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -40,6 +38,7 @@ const {
  *
  * */
 
+/** @internal */
 class DependencyWheelPoint extends SankeyPoint {
 
     /* *
@@ -66,6 +65,10 @@ class DependencyWheelPoint extends SankeyPoint {
 
     public toNode!: DependencyWheelPoint;
 
+    public weightTo?: number;
+
+    public sumTo?: number;
+
     /* *
      *
      *  Functions
@@ -73,8 +76,23 @@ class DependencyWheelPoint extends SankeyPoint {
      * */
 
     /**
+     * Return the sum of incoming links wieght and outgoing links weightTo.
+     * @internal
+     */
+    public getSumTo(): number {
+        let sum = 0;
+        for (const link of this.linksFrom) {
+            sum += link.weightTo || link.weight || 0;
+        }
+        for (const link of this.linksTo) {
+            sum += link.weight || 0;
+        }
+        return sum;
+    }
+
+    /**
      * Return a text path that the data label uses.
-     * @private
+     * @internal
      */
     public getDataLabelPath(label: SVGLabel): SVGElement {
         const point = this,
@@ -139,4 +157,5 @@ class DependencyWheelPoint extends SankeyPoint {
  *
  * */
 
+/** @internal */
 export default DependencyWheelPoint;

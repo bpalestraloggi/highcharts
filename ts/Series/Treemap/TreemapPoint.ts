@@ -1,12 +1,13 @@
 /* *
  *
- *  (c) 2014-2025 Highsoft AS
+ *  (c) 2014-2026 Highsoft AS
  *
- *  Authors: Jon Arild Nygard / Oystein Moseng
+ *  Authors: Jon Arild Nygård / Øystein Moseng
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -31,12 +32,7 @@ const {
     pie: { prototype: { pointClass: PiePoint } },
     scatter: { prototype: { pointClass: ScatterPoint } }
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const {
-    extend,
-    isNumber,
-    pick
-} = U;
+import { extend, isNumber } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -107,7 +103,7 @@ class TreemapPoint extends ScatterPoint {
             !this.node.isGroup &&
             !this.node.isLeaf &&
             !series.nodeMap[series.rootNode].isGroup &&
-            !pick(options.interactByLeaf, !options.allowTraversingTree)
+            !(options.interactByLeaf ?? !options.allowTraversingTree)
         ) {
             className += ' highcharts-internal-node-interactive';
 

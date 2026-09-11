@@ -2,14 +2,16 @@
  *
  *  Text Input Cell Content class
  *
- *  (c) 2020-2025 Highsoft AS
+ *  (c) 2020-2026 Highsoft AS
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  *  Authors:
- *  - Dawid Dragula
+ *  - Dawid Draguła
+ *  - Sebastian Bochan
  *
  * */
 
@@ -21,17 +23,14 @@
  *
  * */
 
-import type DataTable from '../../../../Data/DataTable';
+import type { CellType as DataTableCellType } from '../../../../Data/DataTable';
 import type { EditModeContent } from '../../CellEditing/CellEditMode';
 import type TableCell from '../../../Core/Table/Body/TableCell';
 import type TextInputRenderer from '../Renderers/TextInputRenderer';
 
 import CellContentPro from '../CellContentPro.js';
-import U from '../../../../Core/Utilities.js';
-
-const {
-    defined
-} = U;
+import Globals from '../../../Core/Globals.js';
+import { defined } from '../../../../Shared/Utilities.js';
 
 
 /* *
@@ -45,6 +44,9 @@ const {
  */
 class TextInputContent extends CellContentPro implements EditModeContent {
 
+    /**
+     * Whether to finish the edit after a change.
+     */
     public finishAfterChange: boolean = true;
 
     public blurHandler?: (e: FocusEvent) => void;
@@ -81,14 +83,27 @@ class TextInputContent extends CellContentPro implements EditModeContent {
      *
      * */
 
+    /**
+     * Adds the input element to the parent element.
+     * @param parentElement The parent element to add the input element to.
+     * @returns The input element.
+     */
     public override add(
         parentElement: HTMLElement = this.cell.htmlElement
     ): HTMLInputElement {
         const cell = this.cell;
         const input = this.input = document.createElement('input');
+        const { options } = this.renderer as TextInputRenderer;
 
         input.tabIndex = -1;
         input.name = cell.column.id + '-' + cell.row.id;
+        input.classList.add(Globals.getClassName('input'));
+
+        if (options.attributes) {
+            Object.entries(options.attributes).forEach(([key, value]): void => {
+                input.setAttribute(key, value);
+            });
+        }
 
         this.update();
 
@@ -102,17 +117,26 @@ class TextInputContent extends CellContentPro implements EditModeContent {
         return input;
     }
 
+    /**
+     * Updates the input element.
+     */
     public override update(): void {
         const { options } = this.renderer as TextInputRenderer;
         this.input.value = this.convertToInputValue();
         this.input.disabled = !!options.disabled;
     }
 
+    /**
+     * Gets the raw value of the input element.
+     */
     public get rawValue(): string {
         return this.input.value;
     }
 
-    public get value(): DataTable.CellType {
+    /**
+     * Gets the value of the input element.
+     */
+    public get value(): DataTableCellType {
         const val = this.input.value;
         switch (this.cell.column.dataType) {
             case 'datetime':
@@ -139,10 +163,17 @@ class TextInputContent extends CellContentPro implements EditModeContent {
         return defined(val) ? '' + val : '';
     }
 
+    /**
+     * Gets the main element (input) of the content.
+     * @returns The input element.
+     */
     public getMainElement(): HTMLInputElement {
         return this.input;
     }
 
+    /**
+     * Destroys the content.
+     */
     public override destroy(): void {
         const input = this.input;
         this.cell.htmlElement.removeEventListener(
@@ -163,7 +194,7 @@ class TextInputContent extends CellContentPro implements EditModeContent {
             return;
         }
 
-        void this.cell.setValue((e.target as HTMLSelectElement).value, true);
+        void this.cell.editValue((e.target as HTMLSelectElement).value);
     };
 
     private readonly onKeyDown = (e: KeyboardEvent): void => {

@@ -2,6 +2,8 @@
  * Copyright (C) Highsoft AS
  */
 
+/* eslint-disable node/no-unsupported-features/es-syntax */
+
 const gulp = require('gulp');
 const path = require('path');
 
@@ -144,7 +146,12 @@ function checkDemosConsistency() {
     glob.sync(
         FSLib.path(process.cwd() + '/samples/*/demo/*', true)
     ).forEach(p => {
-        assert(existsSync(FSLib.path(p + '/demo.details')), `Missing demo.details file at ${p}`);
+        if (existsSync(FSLib.path(p + '/demo.html'))) {
+            assert(
+                existsSync(FSLib.path(p + '/demo.details')),
+                `Missing demo.details file at ${p}`
+            );
+        }
     });
 
     glob.sync(
@@ -280,7 +287,6 @@ function checkDocsConsistency() {
 async function test(gulpback) {
     const argv = require('yargs').argv;
     const childProcess = require('node:child_process');
-    const fs = require('node:fs');
     const logLib = require('../libs/log');
     const PluginError = require('plugin-error');
 
@@ -313,14 +319,36 @@ specified by config.imageCapture.resultsOutputPath.
         argv.tests ||
         argv.testsAbsolutePath
     );
+
+    // Extract --project parameter from command line arguments
+    // This is passed directly to Playwright, not parsed by yargs
+    // Supports both --project value and --project=value formats
+    let projectParam = null;
+    for (let i = 0; i < process.argv.length; i++) {
+        const arg = process.argv[i];
+        if (arg === '--project' && i + 1 < process.argv.length) {
+            projectParam = process.argv[i + 1];
+            break;
+        } else if (arg.startsWith('--project=')) {
+            projectParam = arg.split('=')[1];
+            break;
+        }
+    }
+
+    // Use different config file for different projects to avoid cache conflicts
+    const configFile = projectParam ?
+        CONFIGURATION_FILE.replace('.json', `_${projectParam}.json`) :
+        CONFIGURATION_FILE;
+
     const runConfig = {
-        configFile: CONFIGURATION_FILE,
+        configFile,
         codeDirectory: CODE_DIRECTORY,
         jsDirectory: JS_DIRECTORY,
-        testsDirectory: TESTS_DIRECTORY
+        testsDirectory: TESTS_DIRECTORY,
+        project: projectParam
     };
 
-    const { getProductTests } = require('./lib/test');
+    const { getProductTests, getProducts } = require('./lib/test');
     const productTests = getProductTests();
 
     // If false, there's no modified products
@@ -329,9 +357,6 @@ specified by config.imageCapture.resultsOutputPath.
         logLib.message('No tests to run, exiting early');
         return;
     }
-
-    // Conditionally build required code
-    await gulp.task('scripts')(gulpback);
 
     const shouldRunTests = forceRun ||
         (await shouldRun(runConfig).catch(error => {
@@ -353,32 +378,94 @@ specified by config.imageCapture.resultsOutputPath.
 
         logLib.message('Run `gulp test --help` for available options');
 
-        const testArgumentParts = [];
+        // Visual tests use Karma, unit tests use Playwright
+        const isVisualTest = argv.visualcompare || argv.reference;
 
-        if (Array.isArray(productTests)) {
-            testArgumentParts.push('--tests');
-            productTests.forEach(testPath =>
-                testArgumentParts.push(`unit-tests/${testPath}/**/demo.js`));
-        }
+        if (isVisualTest) {
+            // Visual comparison tests - keep using Karma
+            await gulp.task('scripts')(gulpback);
 
-        const result = childProcess.spawnSync('npx', [
-            'karma', 'start', KARMA_CONFIG_FILE,
-            testArgumentParts.join(' '),
-            ...process.argv
-        ], {
-            cwd: process.cwd(),
-            stdio: ['ignore', process.stdout, process.stderr],
-            timeout: 1800000,
-            shell: path.sep === path.win32.sep
-        });
+            const testArgumentParts = [];
 
-        if (result.error || result.status !== 0) {
-            if (argv.speak) {
-                logLib.say('Tests failed!');
+            if (Array.isArray(productTests)) {
+                testArgumentParts.push('--tests');
+                productTests.forEach(testPath =>
+                    testArgumentParts.push(`unit-tests/${testPath}/**/demo.js`));
             }
-            throw new PluginError('karma', {
-                message: 'Tests failed'
+
+            const result = childProcess.spawnSync('npx', [
+                'karma', 'start', KARMA_CONFIG_FILE,
+                testArgumentParts.join(' '),
+                ...process.argv
+            ], {
+                cwd: process.cwd(),
+                stdio: ['ignore', process.stdout, process.stderr],
+                timeout: 1800000,
+                shell: path.sep === path.win32.sep
             });
+
+            if (result.error || result.status !== 0) {
+                if (argv.speak) {
+                    logLib.say('Tests failed!');
+                }
+                throw new PluginError('karma', {
+                    message: 'Tests failed'
+                });
+            }
+        } else {
+            // Unit tests - use Playwright
+            const processLib = require('../libs/process');
+
+            // Conditionally build required code
+            await gulp.task('scripts')(gulpback);
+
+            // Determine which Playwright projects to run
+            const products = argv.modified ? getProducts() : (argv.product ? [argv.product] : null);
+            const prods = products?.length ? products : ['Core'];
+            const hasGrid = prods.includes('Grid');
+
+            const hasDashboards = prods.includes('Dashboards');
+            const hasHC = prods.some(p => ['Core', 'Stock', 'Maps', 'Gantt', 'Accessibility'].includes(p));
+
+            const gridLiteProj = ['grid-lite', 'grid-shared'];
+            const gridProProj = ['grid-pro'];
+            const dashProj = ['setup-dashboards', 'dashboards'];
+            const hcProj = ['setup-highcharts', 'highcharts', 'qunit'];
+            const a11yProj = ['setup-highcharts', 'qunit'];
+
+            const commands = [];
+            if (hasGrid) {
+                commands.push({ projects: gridLiteProj, grep: '' });
+                commands.push({ projects: gridProProj, grep: '' });
+            }
+            if (hasDashboards) {
+                commands.push({ projects: dashProj, grep: '' });
+            }
+            if (hasHC) {
+                const hcGrep = Array.isArray(productTests) && productTests.length > 0 ?
+                    `--grep "unit-tests/(${productTests.join('|')})"` :
+                    '';
+                commands.push({ projects: hcProj, grep: hcGrep });
+            }
+            if ((hasGrid || hasDashboards) && !hasHC) {
+                commands.push({ projects: a11yProj, grep: '--grep "unit-tests/(accessibility)"' });
+            }
+            if (commands.length === 0) {
+                commands.push({ projects: hcProj, grep: '' });
+            }
+
+            for (const { projects, grep } of commands) {
+                const cmd = `npx playwright test ${projects.map(p => `--project=${p}`).join(' ')} ${grep}`.trim();
+                logLib.message(`Running: ${cmd}`);
+                try {
+                    await processLib.exec(cmd);
+                } catch {
+                    if (argv.speak) {
+                        logLib.say('Tests failed!');
+                    }
+                    throw new PluginError('playwright', { message: 'Tests failed' });
+                }
+            }
         }
 
         if (argv.speak) {
@@ -386,34 +473,6 @@ specified by config.imageCapture.resultsOutputPath.
         }
 
         saveRun(runConfig);
-
-        // Capture console.error, console.warn and console.log
-        const consoleLogPath = `${BASE}/test/console.log`;
-        const consoleLog = await fs.promises.readFile(
-            consoleLogPath,
-            'utf-8'
-        ).catch(() => {});
-        if (consoleLog) {
-            const errors = (consoleLog.match(/ ERROR:/gu) || []).length,
-                warnings = (consoleLog.match(/ WARN:/gu) || []).length,
-                logs = (consoleLog.match(/ LOG:/gu) || []).length;
-
-            const message = [];
-            if (errors) {
-                message.push(`${errors} errors`.red);
-            }
-            if (warnings) {
-                message.push(`${warnings} warnings`.yellow);
-            }
-            if (logs) {
-                message.push(`${logs} logs`);
-            }
-
-            logLib.message(
-                `The browser console logged ${message.join(', ')}.\n` +
-                'They can be reviewed in ' + consoleLogPath.cyan + '.'
-            );
-        }
     }
 }
 

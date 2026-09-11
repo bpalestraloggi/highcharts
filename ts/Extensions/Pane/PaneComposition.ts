@@ -9,13 +9,11 @@ import type Pane from './Pane';
 import type Pointer from '../../Core/Pointer';
 import type Series from '../../Core/Series/Series';
 
-import U from '../../Core/Utilities.js';
-const {
+import {
     addEvent,
     correctFloat,
-    defined,
-    pick
-} = U;
+    defined
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -23,19 +21,21 @@ const {
  *
  * */
 
-declare module '../../Core/Chart/ChartLike'{
-    interface ChartLike {
+/** @internal */
+declare module '../../Core/Chart/ChartBase' {
+    interface ChartBase {
         hoverPane?: Pane;
         pane?: Array<Pane>;
         getHoverPane?(eventArgs: any): (Pane|undefined);
     }
 }
 
-export interface PaneChart extends Chart {
+/** @internal */
+export type PaneChart = Chart & {
     hoverPane?: Pane;
     pane: Array<Pane>;
     getHoverPane(eventArgs: any): (Pane|undefined);
-}
+};
 
 /* *
  *
@@ -43,7 +43,7 @@ export interface PaneChart extends Chart {
  *
  * */
 
-/** @private */
+/** @internal */
 function chartGetHoverPane(
     this: PaneChart,
     eventArgs: {
@@ -68,7 +68,7 @@ function chartGetHoverPane(
     return hoverPane;
 }
 
-/** @private */
+/** @internal */
 function compose(
     ChartClass: typeof Chart,
     PointerClass: typeof Pointer
@@ -80,7 +80,6 @@ function compose(
         chartProto.getHoverPane = chartGetHoverPane;
 
         addEvent(ChartClass, 'afterIsInsidePlot', onChartAfterIsInsiderPlot);
-
         addEvent(PointerClass, 'afterGetHoverData', onPointerAfterGetHoverData);
         addEvent(
             PointerClass,
@@ -93,7 +92,7 @@ function compose(
 
 /**
  * Check whether element is inside or outside pane.
- * @private
+ * @internal
  * @param  {number} x
  * Element's x coordinate
  * @param  {number} y
@@ -115,7 +114,8 @@ function isInsidePane(
     let insideSlice = true;
 
     const cx = center[0],
-        cy = center[1];
+        cy = center[1],
+        twoPi = 2 * Math.PI;
 
     const distance = Math.sqrt(
         Math.pow(x - cx, 2) + Math.pow(y - cy, 2)
@@ -123,39 +123,45 @@ function isInsidePane(
 
     if (defined(startAngle) && defined(endAngle)) {
         // Round angle to N-decimals to avoid numeric errors
-        const angle = Math.atan2(
+        let angle = Math.atan2(
             correctFloat(y - cy, 8),
             correctFloat(x - cx, 8)
         );
 
+        // Normalize angle to [0, 2π)
+        angle = (angle + twoPi) % (twoPi);
+        startAngle = (startAngle + twoPi) % (twoPi);
+        endAngle = (endAngle + twoPi) % (twoPi);
+
         // Ignore full circle panes:
-        if (endAngle !== startAngle) {
-            // If normalized start angle is bigger than normalized end,
-            // it means angles have different signs. In such situation we
-            // check the <-PI, startAngle> and <endAngle, PI> ranges.
+        if (Math.abs(endAngle - startAngle) > 1e-6) {
+        // If the normalized start angle is greater than the end angle,
+        // it means the arc wraps around 0°. In this case, we check
+        // if the angle falls into either [startAngle, 2π) or [0, endAngle].
             if (startAngle > endAngle) {
                 insideSlice = (
-                    angle >= startAngle &&
-                    angle <= Math.PI
-                ) || (
-                    angle <= endAngle &&
-                    angle >= -Math.PI
+                    angle >= startAngle ||
+                    angle <= endAngle
                 );
             } else {
-                // In this case, we simple check if angle is within the
-                // <startAngle, endAngle> range
+                // In this case, we simply check if angle is within the
+                // [startAngle, endAngle] range
                 insideSlice = angle >= startAngle &&
-                    angle <= correctFloat(endAngle, 8);
+                    angle <= endAngle;
             }
         }
+    } else {
+        // If no start/end angles are defined, treat it as a full circle
+        insideSlice = true;
     }
+
     // Round up radius because x and y values are rounded
     return distance <= Math.ceil(center[2] / 2) && insideSlice;
 }
 
 /**
  * Check if (x, y) position is within pane for polar.
- * @private
+ * @internal
  */
 function onChartAfterIsInsiderPlot(
     this: Chart,
@@ -186,7 +192,7 @@ function onChartAfterIsInsiderPlot(
 }
 
 /**
- *
+ * @internal
  */
 function onPointerAfterGetHoverData(
     this: Pointer,
@@ -208,7 +214,7 @@ function onPointerAfterGetHoverData(
     }
 }
 
-/** @private */
+/** @internal */
 function onPointerBeforeGetHoverData(
     this: Pointer,
     eventArgs: {
@@ -228,7 +234,7 @@ function onPointerBeforeGetHoverData(
             return (
                 s.visible &&
                 !(!eventArgs.shared && s.directTouch) && // #3821
-                pick(s.options.enableMouseTracking, true) &&
+                (s.options.enableMouseTracking ?? true) &&
                 (!chart.hoverPane || s.xAxis.pane === chart.hoverPane)
             );
         };
@@ -243,8 +249,10 @@ function onPointerBeforeGetHoverData(
  *
  * */
 
+/** @internal */
 const PaneComposition = {
     compose
 };
 
+/** @internal */
 export default PaneComposition;

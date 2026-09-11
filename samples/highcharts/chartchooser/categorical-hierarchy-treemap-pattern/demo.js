@@ -31,8 +31,7 @@ Highcharts.chart('container', {
                         style: {
                             textOutline: '5px contrast',
                             fontSize: 18
-                        },
-                        zIndex: 9
+                        }
                     },
                     borderWidth: 3
                 }
@@ -159,12 +158,10 @@ Highcharts.chart('container', {
         text: 'Fiji divisions and provinces by population 2017'
     },
     subtitle: {
-        useHTMl: true,
         text:
       'Source:<a href="https://en.wikipedia.org/wiki/Local_government_in_Fiji">Wikipedia</a>'
     },
     tooltip: {
-        useHTML: true,
         pointFormat: '<b>{point.name}</b>: Population is <b>{point.value}</b>'
     }
 });

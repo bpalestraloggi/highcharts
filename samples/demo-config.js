@@ -7,6 +7,11 @@
  * title
  */
 module.exports = {
+    'Highcharts Overview': {
+        categories: ['Basics'],
+        filter: { tags: ['Highcharts overview'] },
+        path: '/'
+    },
     Highcharts: {
         categories: [
             'Line charts',
@@ -23,6 +28,7 @@ module.exports = {
             'Gauges',
             'Heat and tree maps',
             'Trees and networks',
+            'Data',
             'More chart types'
         ],
         filter: { tags: ['Highcharts demo'] },

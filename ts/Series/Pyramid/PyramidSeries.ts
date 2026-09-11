@@ -2,11 +2,13 @@
  *
  *  Highcharts funnel module
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -24,8 +26,7 @@ import type PyramidSeriesOptions from './PyramidSeriesOptions';
 import FunnelSeries from '../Funnel/FunnelSeries.js';
 import PyramidSeriesDefaults from './PyramidSeriesDefaults.js';
 import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
-import U from '../../Core/Utilities.js';
-const { merge } = U;
+import { merge } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -36,7 +37,7 @@ const { merge } = U;
 /**
  * Pyramid series type.
  *
- * @private
+ * @internal
  * @class
  * @name Highcharts.seriesTypes.pyramid
  *
@@ -87,6 +88,7 @@ class PyramidSeries extends FunnelSeries {
  *
  * */
 
+/** @internal */
 interface PyramidSeries {
     pointClass: typeof PyramidPoint;
 }

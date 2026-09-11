@@ -2,11 +2,13 @@
  *
  *  Highcharts funnel module
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -19,8 +21,6 @@
  * */
 
 import type FunnelSeriesOptions from './FunnelSeriesOptions';
-
-import { Palette } from '../../Core/Color/Palettes.js';
 
 /* *
  *
@@ -127,7 +127,21 @@ const FunnelSeriesDefaults: FunnelSeriesOptions = {
      */
     size: true as any,
 
+    /**
+     * @declare Highcharts.SeriesFunnelDataLabelsOptionsObject
+     * @extends plotOptions.pie.dataLabels
+     */
     dataLabels: {
+
+        /**
+         * Whether to render the data label inside the funnel item instead of
+         * outside, connected by a connector line.
+         *
+         * @type      {boolean}
+         * @default   false
+         * @apioption plotOptions.funnel.dataLabels.inside
+         */
+
         connectorWidth: 1,
         verticalAlign: 'middle'
     },
@@ -152,16 +166,16 @@ const FunnelSeriesDefaults: FunnelSeriesOptions = {
             /**
              * A specific color for the selected point.
              *
-             * @type {Highcharts.ColorString|Highcharts.GradientColorObject|Highcharts.PatternObject}
+             * @type {Highcharts.ColorType}
              */
-            color: Palette.neutralColor20,
+            color: 'var(--highcharts-neutral-color-20)',
 
             /**
              * A specific border color for the selected point.
              *
              * @type {Highcharts.ColorString}
              */
-            borderColor: Palette.neutralColor100
+            borderColor: 'var(--highcharts-neutral-color-100)'
 
         }
 
@@ -220,6 +234,7 @@ const FunnelSeriesDefaults: FunnelSeriesOptions = {
  * @sample {highcharts} highcharts/series/data-array-of-objects/
  *         Config objects
  *
+ * @basic
  * @type      {Array<number|null|*>}
  * @extends   series.pie.data
  * @excluding sliced

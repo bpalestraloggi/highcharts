@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Pawel Lysy
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Paweł Lysy
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -66,6 +68,17 @@ const HLCSeriesDefaults: HLCSeriesOptions = {
      * @default   close
      * @apioption plotOptions.hlc.colorKey
      */
+
+    /**
+     * What type of legend symbol to render for this series. For HLC series,
+     * the default is `hlc`, a vertical stem with a tick on the right
+     * representing the closing value.
+     *
+     * @default   hlc
+     * @product   highstock
+     * @apioption plotOptions.hlc.legendSymbol
+     */
+    legendSymbol: 'hlc',
 
     /**
      * The pixel width of the line/border. Defaults to `1`.
@@ -190,6 +203,7 @@ const HLCSeriesDefaults: HLCSeriesOptions = {
  *    }]
  *    ```
  *
+ * @basic
  * @type      {Array<Array<(number|string),number,number>|Array<(number|string),number,number,number>|*>}
  * @extends   series.arearange.data
  * @excluding y, marker

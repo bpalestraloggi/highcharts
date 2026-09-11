@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Hubert Kozik, Kamil Musiałowski
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Hubert Kozik, Kamil Musiałowski
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -22,23 +24,22 @@ import type SVGElement from '../../Core/Renderer/SVG/SVGElement';
 import type TiledWebMapSeriesOptions from './TiledWebMapSeriesOptions';
 import type MapChart from '../../Core/Chart/MapChart';
 
+import { stop } from '../../Core/Animation/AnimationUtilities.js';
+import Fx from '../../Core/Animation/Fx.js';
 import H from '../../Core/Globals.js';
 const { composed } = H;
 import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 const { map: MapSeries } = SeriesRegistry.seriesTypes;
-import TilesProvidersRegistry from '../../Maps/TilesProviders/TilesProviderRegistry.js';
+import TilesProviderRegistry from '../../Maps/TilesProviders/TilesProviderRegistry.js';
 import TiledWebMapSeriesDefaults from './TiledWebMapSeriesDefaults.js';
 import MapView from '../../Maps/MapView.js';
-import U from '../../Core/Utilities.js';
-const {
+import {
     addEvent,
     defined,
-    error,
     merge,
-    pick,
     pushUnique
-} = U;
-
+} from '../../Shared/Utilities.js';
+import { error } from '../../Core/Utilities.js';
 
 /* *
  *
@@ -83,7 +84,7 @@ function onRecommendMapView(
 
     if (twm && twm.provider && twm.provider.type && !twm.provider.url) {
         const ProviderDefinition =
-            TilesProvidersRegistry[twm.provider.type];
+            TilesProviderRegistry[twm.provider.type];
 
         if (!defined(ProviderDefinition)) {
             error(
@@ -215,12 +216,6 @@ class TiledWebMapSeries extends MapSeries {
     /**
      * Convert tile to map coordinates in longitude/latitude
      * @private
-     * @param  xTile
-     *         Position x of the tile
-     * @param  yTile
-     *         Position y of the tile
-     * @param  zTile
-     *         Zoom of the tile
      * @return {Highcharts.MapLonLatObject}
      *         The map coordinates
      */
@@ -253,12 +248,10 @@ class TiledWebMapSeries extends MapSeries {
             options = this.options,
             provider = options.provider,
             { zoom } = mapView,
-            lambda = pick(
-                (
-                    mapView.projection.options.rotation &&
+            lambda = ((
+                mapView.projection.options.rotation &&
                     mapView.projection.options.rotation[0]
-                ), 0
-            ),
+            ) ?? 0),
             worldSize = 400.979322,
             tileSize = 256,
             duration = chart.renderer.forExport ? 0 : 200,
@@ -332,7 +325,7 @@ class TiledWebMapSeries extends MapSeries {
         if (provider && (provider.type || provider.url)) {
             if (provider.type && !provider.url) {
                 const ProviderDefinition =
-                    TilesProvidersRegistry[provider.type];
+                    TilesProviderRegistry[provider.type];
 
                 if (!defined(ProviderDefinition)) {
                     error(
@@ -374,7 +367,7 @@ class TiledWebMapSeries extends MapSeries {
                     // Do not show warning if no subdomain in URL
                     theme.url.indexOf('{s}') !== -1
                 ) {
-                    subdomain = pick(def.subdomains && def.subdomains[0], '');
+                    subdomain = ((def.subdomains && def.subdomains[0]) ?? '');
                     error(
                         'Highcharts warning: The Tiles Provider\'s Subdomain ' +
                         '\'' + provider.subdomain + '\' is not defined in ' +
@@ -406,11 +399,11 @@ class TiledWebMapSeries extends MapSeries {
                 this.maxZoom = theme.maxZoom;
 
                 // Add as credits.text, to prevent changing the default mapText
-                const creditsText = pick(
-                    chart.userOptions.credits && chart.userOptions.credits.text,
-                    'Highcharts.com ' + pick(theme.credits, def.defaultCredits)
+                const creditsText = (
+                    (chart.userOptions.credits &&
+                    chart.userOptions.credits.text) ??
+                    ('Highcharts.com ' + (theme.credits ?? def.defaultCredits))
                 );
-
                 if (chart.credits) {
                     chart.credits.update({
                         text: creditsText
@@ -418,7 +411,7 @@ class TiledWebMapSeries extends MapSeries {
                 } else {
                     chart.addCredits({
                         text: creditsText,
-                        style: pick(chart.options.credits?.style, {})
+                        style: (chart.options.credits?.style ?? {})
                     });
                 }
 
@@ -639,6 +632,12 @@ class TiledWebMapSeries extends MapSeries {
             for (const zoomKey of Object.keys(tiles)) {
                 for (const key of Object.keys(tiles[zoomKey].tiles)) {
                     if (mapView.projection && mapView.projection.def) {
+                        const tile = tiles[zoomKey].tiles[key];
+
+                        if (Fx.timers.length > 0) {
+                            stop(tile, 'animator');
+                        }
+
                         // Calculate group translations based on first loaded
                         // tile
                         const scale = ((tileSize / worldSize) *
@@ -648,7 +647,7 @@ class TiledWebMapSeries extends MapSeries {
                             firstTile = tiles[zoomKey].tiles[Object.keys(
                                 tiles[zoomKey].tiles
                             )[0]],
-                            { posX, posY } = tiles[zoomKey].tiles[key];
+                            { posX, posY } = tile;
 
                         if (
                             defined(posX) &&
@@ -679,17 +678,13 @@ class TiledWebMapSeries extends MapSeries {
                                 chart.renderer.globalAnimation &&
                                 chart.hasRendered
                             ) {
-                                const startX = Number(
-                                        tiles[zoomKey].tiles[key].attr('x')
-                                    ),
-                                    startY = Number(
-                                        tiles[zoomKey].tiles[key].attr('y')
-                                    ),
+                                const startX = Number(tile.attr('x')),
+                                    startY = Number(tile.attr('y')),
                                     startWidth = Number(
-                                        tiles[zoomKey].tiles[key].attr('width')
+                                        tile.attr('width')
                                     ),
                                     startHeight = Number(
-                                        tiles[zoomKey].tiles[key].attr('height')
+                                        tile.attr('height')
                                     );
 
 
@@ -697,7 +692,7 @@ class TiledWebMapSeries extends MapSeries {
                                     now,
                                     fx
                                 ): void => {
-                                    tiles[zoomKey].tiles[key].attr({
+                                    tile.attr({
                                         x: (
                                             startX + (((posX * scaledTileSize) -
                                                 tilesOffsetX - startX) * fx.pos)
@@ -720,7 +715,7 @@ class TiledWebMapSeries extends MapSeries {
 
                                 };
                                 series.isAnimating = true;
-                                tiles[zoomKey].tiles[key]
+                                tile
                                     .attr({ animator: 0 })
                                     .animate(
                                         { animator: 1 }, { step },
@@ -760,7 +755,7 @@ class TiledWebMapSeries extends MapSeries {
                                     animateTiles(duration);
                                 }
 
-                                tiles[zoomKey].tiles[key].attr({
+                                tile.attr({
                                     x: (posX * scaledTileSize) - tilesOffsetX,
                                     y: (posY * scaledTileSize) - tilesOffsetY,
                                     width: Math.ceil(scaledTileSize) + 1,
@@ -780,12 +775,10 @@ class TiledWebMapSeries extends MapSeries {
         }
     }
 
-    public update(): void {
-        const series = this,
-            { transformGroups } = series,
+    public update(options: TiledWebMapSeriesOptions): void {
+        const { transformGroups } = this,
             chart = this.chart,
             mapView = chart.mapView,
-            options: TiledWebMapSeriesOptions = arguments[0],
             { provider } = options;
 
         if (transformGroups) {
@@ -800,26 +793,21 @@ class TiledWebMapSeries extends MapSeries {
         if (
             mapView &&
             !defined(chart.userOptions.mapView?.projection) &&
-            provider &&
-            provider.type
+            provider?.type
         ) {
-            const ProviderDefinition = TilesProvidersRegistry[provider.type];
+            const ProviderDefinition = TilesProviderRegistry[provider.type];
 
             if (ProviderDefinition) {
-                const def = new ProviderDefinition(),
-                    { initialProjectionName: providerProjectionName } = def;
-
                 mapView.update({
                     projection: {
-                        name: providerProjectionName
+                        name: (new ProviderDefinition()).initialProjectionName
                     }
-                });
+                }, false);
             }
         }
 
-        super.update.apply(series, arguments);
+        super.update.apply(this, arguments);
     }
-
 }
 
 /* *

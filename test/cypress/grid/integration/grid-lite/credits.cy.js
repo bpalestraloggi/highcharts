@@ -1,19 +1,23 @@
 describe('Credits.', () => {
-    it('Credits are default and not configurable.', () => {
-        cy.visit('/grid-lite/cypress/credits/');
-        cy.get('.hcg-credits')
-            .should('not.contain', 'overwriteText')
-            .find('img').should('exist'); // Default Highcharts icon
+    beforeEach(() => {
+        cy.visit('grid-lite/e2e/credits/');
+    });
 
-        cy.window().its('Grid').then((grid) => {
-            grid.grids[0].update({
+    it('Credits are default and not configurable.', () => {
+        cy.get('a.hcg-credits')
+            .should('have.attr', 'href', 'https://www.highcharts.com')
+            .should('exist');
+
+        cy.grid().then((grid) => {
+            grid.update({
                 credits: {
                     enabled: false
                 }
             });
-
-            cy.get('.hcg-credits')
-                .find('img').should('exist'); // Default Highcharts icon
         });
+
+        cy.get('a.hcg-credits')
+            .should('have.attr', 'href', 'https://www.highcharts.com')
+            .should('exist');
     });
 });

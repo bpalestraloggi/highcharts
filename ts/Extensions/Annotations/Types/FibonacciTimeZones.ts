@@ -1,8 +1,12 @@
 /* *
  *
- *  Author: Rafal Sebestjanski
+ *  (c) 2009-2026 Highsoft AS
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
+ *
+ *  Author: Rafał Sebestjański
  *
  * */
 
@@ -15,6 +19,10 @@
  * */
 
 import type { AnnotationEventObject } from '../EventEmitter';
+import type {
+    AnnotationOptions,
+    AnnotationTypeOptions
+} from '../AnnotationOptions';
 import type { ControlPointOptionsObject } from '../ControlPointOptions';
 import type PositionObject from '../../../Core/Renderer/PositionObject';
 
@@ -25,11 +33,10 @@ import D from '../../../Core/Defaults.js';
 const { defaultOptions } = D;
 import InfinityLine from './InfinityLine.js';
 import MockPoint from '../MockPoint.js';
-import { Palette } from '../../../Core/Color/Palettes';
-import U from '../../../Core/Utilities.js';
-const { merge } = U;
+import { AnnotationMockPointFunction } from '../AnnotationOptions';
+import { merge } from '../../../Shared/Utilities.js';
 
-if (defaultOptions.annotations) {
+if (defaultOptions.annotations?.types) {
     defaultOptions.annotations.types.fibonacciTimeZones = merge(
         defaultOptions.annotations.types.crookedLine,
         /**
@@ -41,6 +48,7 @@ if (defaultOptions.annotations) {
          * @extends      annotations.types.crookedLine
          * @since        9.3.0
          * @product      highstock
+         * @requires     modules/annotations-advanced
          * @optionparent annotations.types.fibonacciTimeZones
          */
         {
@@ -61,7 +69,7 @@ if (defaultOptions.annotations) {
                      * @since     9.3.0
                      * @apioption annotations.types.fibonacciTimeZones.typeOptions.line.stroke
                      */
-                    stroke: Palette.neutralColor80,
+                    stroke: 'var(--highcharts-neutral-color-80)',
                     /**
                      * The width of the lines.
                      *
@@ -164,13 +172,13 @@ This is being done for each fibonacci time zone line.
     |---------*--------------------------------------------------------|
         and this point here is found (intersection with the plot area edge)
 
-* @private
+* @internal
 */
 function edgePoint(
     startIndex: number,
     endIndex: number,
     fibonacciIndex: number
-): Function {
+): AnnotationMockPointFunction {
     return function (target: any): PositionObject {
         const chart = target.annotation.chart,
             plotLeftOrTop = chart.inverted ? chart.plotTop : chart.plotLeft;
@@ -223,6 +231,7 @@ function edgePoint(
  *
  * */
 
+/** @internal */
 class FibonacciTimeZones extends CrookedLine {
 
     /* *
@@ -256,11 +265,11 @@ class FibonacciTimeZones extends CrookedLine {
 
             this.initShape(
                 merge(
-                    this.options.typeOptions.line,
+                    this.options.typeOptions?.line,
                     {
                         type: 'path',
-                        points: points,
-                        className: 'highcharts-fibonacci-timezones-lines'
+                        className: 'highcharts-fibonacci-timezones-lines',
+                        points
                     }
                 ),
                 i // Shape's index. Can be found in annotation.shapes[i].index
@@ -293,6 +302,7 @@ class FibonacciTimeZones extends CrookedLine {
  *
  * */
 
+/** @internal */
 interface FibonacciTimeZones {
     defaultOptions: CrookedLine['defaultOptions'];
     secondLineEdgePoints: [Function, Function];
@@ -305,10 +315,21 @@ interface FibonacciTimeZones {
  * */
 
 namespace FibonacciTimeZones {
-    export interface Options extends CrookedLine.Options{
+    /**
+     * Options for the fibonacci time zones annotation type.
+     *
+     * @sample highcharts/annotations-advanced/fibonacci-time-zones/
+     *         Fibonacci Time Zones
+     *
+     * @extends      annotations.types.crookedLine
+     * @since        9.3.0
+     * @product      highstock
+     * @optionparent annotations.types.fibonacciTimeZones
+     */
+    export interface Options extends AnnotationOptions {
         typeOptions: TypeOptions;
     }
-    export interface TypeOptions extends CrookedLine.TypeOptions {
+    export interface TypeOptions extends AnnotationTypeOptions {
         type: string;
         controlPointOptions: ControlPointOptionsObject;
     }
@@ -320,6 +341,7 @@ namespace FibonacciTimeZones {
  *
  * */
 
+/** @internal */
 declare module './AnnotationType'{
     interface AnnotationTypeRegistry {
         fibonacciTimeZones: typeof FibonacciTimeZones;

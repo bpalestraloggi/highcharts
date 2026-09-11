@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -19,23 +21,22 @@
 import type AnimationOptions from './AnimationOptions';
 import type Chart from '../Chart/Chart';
 import type CSSObject from '../Renderer/CSSObject';
+import type { DeepPartial } from '../../Shared/Types';
 import type { HTMLDOMElement } from '../Renderer/DOMElementType';
 import type Series from '../Series/Series';
 import type SVGAttributes from '../Renderer/SVG/SVGAttributes';
 import type SVGElement from '../Renderer/SVG/SVGElement';
 
 import Fx from './Fx.js';
-import U from '../Utilities.js';
-const {
+import {
     defined,
     getStyle,
     isArray,
     isNumber,
     isObject,
     merge,
-    objectEach,
-    pick
-} = U;
+    objectEach
+} from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -59,15 +60,12 @@ const {
  * This function always relates to a chart, and sets a property on the renderer,
  * so it should be moved to the SVGRenderer.
  */
-function setAnimation(
+export function setAnimation(
     animation: (boolean|Partial<AnimationOptions>|undefined),
     chart: Chart
 ): void {
-    chart.renderer.globalAnimation = pick(
-        animation,
-        chart.options.chart.animation,
-        true
-    );
+    chart.renderer.globalAnimation =
+        animation ?? chart.options.chart.animation ?? true;
 }
 
 /**
@@ -83,7 +81,7 @@ function setAnimation(
  * @return {Highcharts.AnimationOptionsObject}
  *         An object with at least a duration property.
  */
-function animObject(
+export function animObject(
     animation?: (boolean|DeepPartial<AnimationOptions>)
 ): AnimationOptions {
     return isObject(animation) ?
@@ -112,7 +110,7 @@ function animObject(
  * @return {number}
  *        The numeric value.
  */
-function getDeferredAnimation(
+export function getDeferredAnimation(
     chart: Chart,
     animation: (boolean|Partial<AnimationOptions>|undefined),
     series?: Series
@@ -149,6 +147,11 @@ function getDeferredAnimation(
 /**
  * The global animate method, which uses Fx to create individual animators.
  *
+ * @sample highcharts/members/renderer-basic
+ *         SVG elements with animation
+ * @sample highcharts/members/animate
+ *         Animation without an owner element
+ *
  * @function Highcharts.animate
  *
  * @param {Highcharts.HTMLDOMElement|Highcharts.SVGElement} el
@@ -164,23 +167,16 @@ function getDeferredAnimation(
  *
  * @return {void}
  */
-function animate(
-    el: (HTMLDOMElement|SVGElement),
-    params: (CSSObject|SVGAttributes),
+export function animate(
+    el?: (HTMLDOMElement|SVGElement),
+    params: (CSSObject|SVGAttributes|{ pos: number }) = { pos: 1 },
     opt?: boolean|Partial<AnimationOptions>
 ): void {
-    let start,
-        unit = '',
-        end,
-        fx,
-        args;
-
     if (!isObject(opt)) { // Number or undefined/null
-        args = arguments;
         opt = {
-            duration: args[2],
-            easing: args[3],
-            complete: args[4]
+            duration: arguments[2],
+            easing: arguments[3],
+            complete: arguments[4]
         };
     }
     if (!isNumber(opt.duration)) {
@@ -191,26 +187,31 @@ function animate(
         (Math[opt.easing as keyof Math] || Math.easeInOutSine) as any;
     opt.curAnim = merge(params) as any;
 
-    objectEach(params, function (val, prop): void {
+    objectEach(params, (val: string|number, prop: string): void => {
         // Stop current running animation of this property
-        stop(el as any, prop);
+        if (el) {
+            stop(el, prop);
+        }
 
-        fx = new Fx(el as any, opt as any, prop);
-        end = void 0;
+        const fx = new Fx(el, opt, prop),
+            d = (params as SVGAttributes).d;
 
-        if ((prop as any) === 'd' && isArray((params as any).d)) {
+        let start: number|string = 0,
+            end: number|string|undefined = void 0,
+            unit = '';
+
+        if (prop === 'd' && isArray(d)) {
             fx.paths = fx.initPath(
-                el as any,
-                (el as any).pathArray,
-                (params as any).d
+                el as SVGElement,
+                (el as SVGElement).pathArray,
+                d
             );
-            fx.toD = (params as any).d;
-            start = 0;
+            fx.toD = d;
             end = 1;
-        } else if ((el as any).attr) {
-            start = (el as any).attr(prop);
-        } else {
-            start = parseFloat(getStyle(el as any, prop) as any) || 0;
+        } else if ((el as SVGElement)?.attr) {
+            start = (el as SVGElement).attr(prop);
+        } else if (el) {
+            start = +(getStyle(el as HTMLElement, prop) || 0);
             if (prop !== 'opacity') {
                 unit = 'px';
             }
@@ -222,7 +223,11 @@ function animate(
         if (typeof end === 'string' && end.match('px')) {
             end = end.replace(/px/g, ''); // #4351
         }
-        fx.run(start as any, end as any, unit);
+
+        // Empty dashstyle animation crashes treemap on hover
+        if (defined(end)) {
+            fx.run(start as any, end as any, unit);
+        }
     });
 }
 
@@ -247,29 +252,48 @@ function animate(
  * improvement in all cases where we stop the animation from .attr. Instead of
  * stopping everything, we can just stop the actual attributes we're setting.
  */
-function stop(el: SVGElement|HTMLElement, prop?: string): void {
-    let i = Fx.timers.length;
-
-    // Remove timers related to this element (#4519)
-    while (i--) {
-        if (Fx.timers[i].elem === el && (!prop || prop === Fx.timers[i].prop)) {
-            Fx.timers[i].stopped = true; // #4667
+export const stop = (el: SVGElement|HTMLElement, prop?: string): void =>
+    Fx.timers.forEach((timer): void => {
+        if (timer.elem === el && (!prop || prop === timer.prop)) {
+            timer.stopped = true; // #4667
         }
-    }
-}
-
-const animationExports = {
-    animate,
-    animObject,
-    getDeferredAnimation,
-    setAnimation,
-    stop
-};
+    });
 
 /* *
  *
- *  Default Export
+ *  API Options
  *
  * */
 
-export default animationExports;
+
+/**
+ * An animation configuration. Animation configurations can also be defined as
+ * booleans, where `false` turns off animation and `true` defaults to a duration
+ * of 500ms and defer of 0ms.
+ *
+ * @interface Highcharts.AnimationOptionsObject
+ *//**
+ * A callback function to execute when the animation finishes.
+ * @name Highcharts.AnimationOptionsObject#complete
+ * @type {Function|undefined}
+ *//**
+ * The animation defer in milliseconds.
+ * @name Highcharts.AnimationOptionsObject#defer
+ * @type {number|undefined}
+ *//**
+ * The animation duration in milliseconds.
+ * @name Highcharts.AnimationOptionsObject#duration
+ * @type {number|undefined}
+ *//**
+ * The name of an easing function as defined on the `Math` object.
+ * @name Highcharts.AnimationOptionsObject#easing
+ * @type {string|Function|undefined}
+ *//**
+ * A callback function to execute on each step of each attribute or CSS property
+ * that's being animated. The first argument contains information about the
+ * animation and progress.
+ * @name Highcharts.AnimationOptionsObject#step
+ * @type {Function|undefined}
+ */
+
+''; // Keeps doclets in JS file

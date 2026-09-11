@@ -1,12 +1,14 @@
 /* *
  *
- *  (c) 2009-2025 Øystein Moseng
+ *  (c) 2009-2026 Highsoft AS
+ *  Author: Øystein Moseng
  *
  *  Handle keyboard navigation for series.
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -31,15 +33,11 @@ import SeriesRegistry from '../../../Core/Series/SeriesRegistry.js';
 const { seriesTypes } = SeriesRegistry;
 import H from '../../../Core/Globals.js';
 const { doc } = H;
-import U from '../../../Core/Utilities.js';
-const {
-    defined,
-    fireEvent
-} = U;
 
 import KeyboardNavigationHandler from '../../KeyboardNavigationHandler.js';
 import EventProvider from '../../Utils/EventProvider.js';
 import ChartUtilities from '../../Utils/ChartUtilities.js';
+import { defined, fireEvent } from '../../../Shared/Utilities.js';
 const {
     getPointFromXY,
     getSeriesFromName,
@@ -52,14 +50,14 @@ const {
  *
  * */
 
-declare module '../../../Core/Chart/ChartLike'{
-    interface ChartLike {
+declare module '../../../Core/Chart/ChartBase'{
+    interface ChartBase {
         highlightedPoint?: Point;
     }
 }
 
-declare module '../../../Core/Series/SeriesLike' {
-    interface SeriesLike {
+declare module '../../../Core/Series/SeriesBase' {
+    interface SeriesBase {
         /** @requires modules/accessibility */
         keyboardMoveVertical?: boolean;
     }
@@ -71,7 +69,6 @@ declare module '../../../Core/Series/SeriesLike' {
  *
  * */
 
-/* eslint-disable valid-jsdoc */
 
 /**
  * Get the index of a point in a series. This is needed when using e.g. data
@@ -139,18 +136,20 @@ function isSkipPoint(
         pointOptions = point.options,
         pointA11yOptions = pointOptions.accessibility,
         a11yOptions = series.chart.options.accessibility,
-        pointA11yDisabled = pointA11yOptions?.enabled === false;
+        pointA11yDisabled = pointA11yOptions?.enabled === false,
+        // Whether to skip null points. If the user did not set this
+        // option, use the opposite of nullInteraction as the default
+        // (#24650).
+        skipNullPoints = a11yOptions
+            .keyboardNavigation
+            .seriesNavigation
+            .skipNullPoints ?? !nullInteraction;
 
-    return a11yOptions
-        .keyboardNavigation
-        .seriesNavigation
-        .skipNullPoints ?? (
-        !(!point.isNull || nullInteraction) &&
-                point.visible === false ||
-                point.isInside === false ||
-                pointA11yDisabled ||
-                isSkipSeries(series)
-    );
+    return point.isNull && skipNullPoints ||
+        point.visible === false ||
+        point.isInside === false ||
+        pointA11yDisabled ||
+        isSkipSeries(series);
 }
 
 
@@ -294,7 +293,6 @@ class SeriesKeyboardNavigation {
      *
      * */
 
-    /* eslint-disable valid-jsdoc */
 
     /**
      * Init the keyboard navigation

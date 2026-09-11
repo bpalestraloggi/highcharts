@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Pawel Lysy
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Paweł Lysy
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -26,9 +28,13 @@ import RenkoPoint from './RenkoPoint.js';
 import RenkoSeriesDefaults from './RenkoSeriesDefaults.js';
 import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 import ColumnSeries from '../Column/ColumnSeries.js';
-import U from '../../Core/Utilities.js';
 import type AnimationOptions from '../../Core/Animation/AnimationOptions';
-const { extend, merge, relativeLength, isNumber } = U;
+import {
+    extend,
+    isNumber,
+    merge,
+    relativeLength
+} from '../../Shared/Utilities.js';
 
 interface RenkoData {
     x: number;
@@ -68,7 +74,7 @@ class RenkoSeries extends ColumnSeries {
     public setData(
         data: (PointOptions | PointShortOptions)[],
         redraw?: boolean,
-        animation?: boolean | Partial<AnimationOptions> | undefined
+        animation?: boolean | Partial<AnimationOptions>
     ): void {
         this.renkoData = [];
         super.setData(data, redraw, animation, false);
@@ -85,10 +91,12 @@ class RenkoSeries extends ColumnSeries {
     }
 
     public getProcessedData(): Series.ProcessedDataObject {
-        const modified = this.dataTable.modified;
+        const modified = this.dataTable.getModified();
         const processedXData: number[] = [];
         const processedYData: number[] = [];
         const processedLowData: number[] = [];
+        const processedColorData: (ColorType|undefined)[] = [];
+        const processedUpTrendData: (boolean|undefined)[] = [];
         const xData = this.getColumn('x', true);
         const yData = this.getColumn('y', true);
         if (!this.renkoData || this.renkoData.length > 0) {
@@ -152,13 +160,17 @@ class RenkoSeries extends ColumnSeries {
             processedXData.push(point.x);
             processedYData.push(point.y);
             processedLowData.push(point.low);
+            processedColorData.push(point.color);
+            processedUpTrendData.push(point.upTrend);
         }
 
-        this.processedData = renkoData;
+        this.hasProcessedDataTable = true;
 
         modified.setColumn('x', processedXData);
         modified.setColumn('y', processedYData);
         modified.setColumn('low', processedLowData);
+        modified.setColumn('color', processedColorData as any);
+        modified.setColumn('upTrend', processedUpTrendData);
 
         return {
             modified,

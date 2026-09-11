@@ -2,12 +2,13 @@
  *
  *  Highcharts pyramid3d series module
  *
- *  (c) 2010-2025 Highsoft AS
+ *  (c) 2010-2026 Highsoft AS
  *  Author: Kacper Madej
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -79,7 +80,10 @@ const Pyramid3DSeriesDefaults: Pyramid3DSeriesOptions = {
  * @excluding allAreas,boostThreshold,colorAxis,compare,compareBase,dataSorting
  * @product   highcharts
  * @sample    {highcharts} highcharts/demo/pyramid3d/ Pyramid3d
- * @requires  modules/pyramid3d
+ * @requires     highcharts-3d
+ * @requires     modules/cylinder
+ * @requires     modules/funnel3d
+ * @requires     modules/pyramid3d
  * @apioption series.pyramid3d
  */
 
@@ -126,13 +130,14 @@ const Pyramid3DSeriesDefaults: Pyramid3DSeriesOptions = {
  * @sample {highcharts} highcharts/series/data-array-of-objects/
  *         Config objects
  *
+ * @basic
  * @type      {Array<number|Array<number>|*>}
  * @extends   series.funnel3d.data
  * @product   highcharts
  * @apioption series.pyramid3d.data
  */
 
-''; // Detachs doclets above
+''; // Keeps doclets above
 
 /* *
  *

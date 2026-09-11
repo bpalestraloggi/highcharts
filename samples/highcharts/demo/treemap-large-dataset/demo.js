@@ -7,7 +7,7 @@ const renderChart = data => {
             name: 'All',
             type: 'treemap',
             layoutAlgorithm: 'squarified',
-            allowDrillToNode: true,
+            allowTraversingTree: true,
             animationLimit: 1000,
             borderColor: '#252931',
             color: '#252931',
@@ -16,6 +16,7 @@ const renderChart = data => {
             dataLabels: {
                 enabled: false,
                 allowOverlap: true,
+                borderRadius: 0,
                 style: {
                     fontSize: '0.9em',
                     textOutline: 'none'
@@ -109,7 +110,6 @@ const renderChart = data => {
             }
         },
         tooltip: {
-            followPointer: true,
             outside: true,
             headerFormat: '<span style="font-size: 0.9em">' +
                 '{point.custom.fullName}</span><br/>',

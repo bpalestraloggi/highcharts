@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -21,16 +23,14 @@ import type SeriesOptions from '../Core/Series/SeriesOptions';
 import H from '../Core/Globals.js';
 const { deg2rad } = H;
 import Series from '../Core/Series/Series.js';
-import U from '../Core/Utilities.js';
-const {
+import {
     fireEvent,
     isNumber,
-    pick,
     relativeLength
-} = U;
+} from '../Shared/Utilities.js';
 
 /**
- * @private
+ * @internal
  */
 namespace CenteredUtilities {
 
@@ -63,13 +63,12 @@ namespace CenteredUtilities {
      *
      * */
 
-    /* eslint-disable valid-jsdoc */
 
     /**
      * Get the center of the pie based on the size and center options relative
      * to the plot area. Borrowed by the polar and gauge series types.
      *
-     * @private
+     * @internal
      * @function Highcharts.CenteredSeriesMixin.getCenter
      */
     export function getCenter(this: CenteredSeries): Array<number> {
@@ -98,21 +97,18 @@ namespace CenteredUtilities {
         }
 
         const positions: Array<number> = [
-            pick(centerOption?.[0], '50%' as any),
-            pick(centerOption?.[1], '50%' as any),
+            (centerOption?.[0] ?? '50%' as any),
+            (centerOption?.[1] ?? '50%' as any),
             // Prevent from negative values
-            pick(size && size < 0 ? void 0 : options.size, '100%'),
-            pick(
-                innerSize && innerSize < 0 ? void 0 : options.innerSize || 0,
-                '0%'
+            ((size && size < 0 ? void 0 : options.size) ?? '100%'),
+            (
+                (
+                    innerSize && innerSize < 0 ?
+                        void 0 :
+                        options.innerSize || 0
+                ) ?? '0%'
             )
         ];
-
-        // No need for inner size in angular (gauges) series but still required
-        // for pie series
-        if (chart.angular && !(this instanceof Series)) {
-            positions[3] = 0;
-        }
 
         for (i = 0; i < 4; ++i) {
             value = positions[i];
@@ -149,7 +145,7 @@ namespace CenteredUtilities {
      * GetStartAndEndRadians - Calculates start and end angles in radians.
      * Used in series types such as pie and sunburst.
      *
-     * @private
+     * @internal
      * @function Highcharts.CenteredSeriesMixin.getStartAndEndRadians
      *
      * @param {number} [start]
@@ -192,6 +188,7 @@ namespace CenteredUtilities {
  *
  * */
 
+/** @internal */
 export default CenteredUtilities;
 
 /* *
@@ -201,7 +198,7 @@ export default CenteredUtilities;
  * */
 
 /**
- * @private
+ * @internal
  * @interface Highcharts.RadianAngles
  *//**
  * @name Highcharts.RadianAngles#end

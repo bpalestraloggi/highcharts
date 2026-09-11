@@ -81,8 +81,8 @@ You can also test your knowledge on the TypeScript
   ([handbook](https://www.typescriptlang.org/docs/handbook/utility-types.html))
 - Make use of parentheses around type lists. (`Array<(number|null|string)>`)
 - Do not use `any` type in new code as it is only used for the migration phase
-- Add paragraphs around conditional types `(A extends B ? C : D)`, type lists
-  `(A|B)`, and type unions `(A&B)`.
+- Add parentheses around conditional types `(A extends B ? C : D)`, type unions
+  `(A|B)`, and type intersections `(A&B)`.
 
 
 ### Use TypeScript definition files
@@ -90,7 +90,7 @@ You can also test your knowledge on the TypeScript
 If a type is created by multiple files, it should go into its own `*.d.ts` file.
 That way multiple files can add properties to an interface in an `*.d.ts` file.
 A good example for this kind of type interface extension is the
-[`SeriesLike`](./Core/Series/SeriesLike.d.ts) interface.
+[`SeriesBase`](./Core/Series/SeriesBase.d.ts) interface.
 
 
 ### Combine the class pattern with class types

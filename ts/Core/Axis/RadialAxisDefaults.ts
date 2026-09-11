@@ -1,12 +1,14 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
  *  Extension for radial axes
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -18,12 +20,13 @@
  *
  * */
 
+import type { DeepPartial } from '../../Shared/Types';
 import type RadialAxisOptions from './RadialAxisOptions';
 
 /**
-     * Circular axis around the perimeter of a polar chart.
-     * @private
-     */
+ * Circular axis around the perimeter of a polar chart.
+ * @internal
+ */
 const defaultCircularOptions: DeepPartial<RadialAxisOptions> = {
     gridLineWidth: 1, // Spokes
     labels: {
@@ -39,28 +42,25 @@ const defaultCircularOptions: DeepPartial<RadialAxisOptions> = {
 
 /**
  * The default options extend defaultYAxisOptions.
- * @private
+ * @internal
  */
 const defaultRadialGaugeOptions: DeepPartial<RadialAxisOptions> = {
-    endOnTick: false,
     gridLineWidth: 0,
     labels: {
         align: 'center',
-        distance: -25,
+        distance: 15,
         x: 0,
         y: void 0 // Auto
     },
-    lineWidth: 1,
     minorGridLineWidth: 0,
-    minorTickInterval: 'auto',
-    minorTickLength: 10,
+    minorTickLength: 5,
     minorTickPosition: 'inside',
+    minorTicksPerMajor: 10,
     minorTickWidth: 1,
-    startOnTick: false,
-    tickLength: 10,
+    tickLength: void 0,
+    tickWidth: 2,
     tickPixelInterval: 100,
     tickPosition: 'inside',
-    tickWidth: 2,
     title: {
         rotation: 0,
         text: ''
@@ -70,7 +70,7 @@ const defaultRadialGaugeOptions: DeepPartial<RadialAxisOptions> = {
 
 /**
  * Radial axis, like a spoke in a polar chart.
- * @private
+ * @internal
  */
 const defaultRadialOptions: DeepPartial<RadialAxisOptions> = {
 
@@ -91,6 +91,54 @@ const defaultRadialOptions: DeepPartial<RadialAxisOptions> = {
      * @since     4.2.7
      * @product   highcharts
      * @apioption xAxis.angle
+     */
+
+    /**
+     * In a gauge chart, this option determines the inner radius of the
+     * plot band that stretches along the perimeter. It can be given as
+     * a percentage string, like `"100%"`, or as a pixel number, like `100`.
+     * By default, the inner radius is controlled by the [thickness](
+     * #yAxis.plotBands.thickness) option.
+     *
+     * @sample {highcharts} highcharts/xaxis/plotbands-gauge
+     *         Gauge plot band
+     *
+     * @type      {number|string}
+     * @since     2.3
+     * @product   highcharts
+     * @apioption yAxis.plotBands.innerRadius
+     */
+
+    /**
+     * In a gauge chart, this option determines the outer radius of the
+     * plot band that stretches along the perimeter. It can be given as
+     * a percentage string, like `"100%"`, or as a pixel number, like `100`.
+     *
+     * @sample {highcharts} highcharts/xaxis/plotbands-gauge
+     *         Gauge plot band
+     *
+     * @type      {number|string}
+     * @default   100%
+     * @since     2.3
+     * @product   highcharts
+     * @apioption yAxis.plotBands.outerRadius
+     */
+
+    /**
+     * In a gauge chart, this option sets the width of the plot band
+     * stretching along the perimeter. It can be given as a percentage
+     * string, like `"10%"`, or as a pixel number, like `10`. The default
+     * value 10 is the same as the default [tickLength](#yAxis.tickLength),
+     * thus making the plot band act as a background for the tick markers.
+     *
+     * @sample {highcharts} highcharts/xaxis/plotbands-gauge
+     *         Gauge plot band
+     *
+     * @type      {number|string}
+     * @default   10
+     * @since     2.3
+     * @product   highcharts
+     * @apioption yAxis.plotBands.thickness
      */
 
     /**
@@ -134,8 +182,10 @@ const defaultRadialOptions: DeepPartial<RadialAxisOptions> = {
  * */
 
 const RadialAxisDefaults = {
+    /** @internal */
     circular: defaultCircularOptions,
     radial: defaultRadialOptions,
+    /** @internal */
     radialGauge: defaultRadialGaugeOptions
 };
 

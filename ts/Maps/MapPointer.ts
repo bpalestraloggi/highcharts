@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -21,13 +23,12 @@ import type MapNavigation from './MapNavigation';
 import type Pointer from '../Core/Pointer';
 import type PointerEvent from '../Core/PointerEvent';
 
-import U from '../Core/Utilities.js';
-const {
+import {
     defined,
     extend,
-    pick,
+    internalClearTimeout,
     wrap
-} = U;
+} from '../Shared/Utilities.js';
 
 /* *
  *
@@ -35,6 +36,7 @@ const {
  *
  * */
 
+/** @internal */
 declare module '../Core/PointerEvent' {
     interface PointerEvent {
         deltaY?: number;
@@ -43,6 +45,7 @@ declare module '../Core/PointerEvent' {
     }
 }
 
+/** @internal */
 interface MapPointer extends Pointer {
     chart: MapChart;
     mapNavigation: MapNavigation;
@@ -56,6 +59,7 @@ interface MapPointer extends Pointer {
  *
  * */
 
+/** @internal */
 namespace MapPointer {
 
     /* *
@@ -75,7 +79,7 @@ namespace MapPointer {
 
     /**
      * Extend the Pointer.
-     * @private
+     * @internal
      */
     export function compose(
         PointerClass: typeof Pointer
@@ -95,7 +99,7 @@ namespace MapPointer {
 
     /**
      * The event handler for the doubleclick event.
-     * @private
+     * @internal
      */
     function onContainerDblClick(
         this: MapPointer,
@@ -130,7 +134,7 @@ namespace MapPointer {
 
     /**
      * The event handler for the mouse scroll event.
-     * @private
+     * @internal
      */
     function onContainerMouseWheel(
         this: MapPointer,
@@ -145,7 +149,7 @@ namespace MapPointer {
         const delta = (defined(e.wheelDelta) && -(e.wheelDelta as any) / 120) ||
             e.deltaY || e.detail;
 
-        // Wheel zooming on trackpads have different behaviours in Firefox vs
+        // Wheel zooming on trackpads have different behaviors in Firefox vs
         // WebKit. In Firefox the delta increments in steps by 1, so it is not
         // distinguishable from true mouse wheel. Therefore we use this timer
         // to avoid trackpad zooming going too fast and out of control. In
@@ -154,7 +158,7 @@ namespace MapPointer {
         if (Math.abs(delta) >= 1) {
             totalWheelDelta += Math.abs(delta);
             if (totalWheelDeltaTimer) {
-                clearTimeout(totalWheelDeltaTimer);
+                internalClearTimeout(totalWheelDeltaTimer);
             }
             totalWheelDeltaTimer = setTimeout((): void => {
                 totalWheelDelta = 0;
@@ -181,7 +185,7 @@ namespace MapPointer {
 
     /**
      * Add lon and lat information to pointer events
-     * @private
+     * @internal
      */
     function wrapNormalize(
         this: MapPointer,
@@ -208,7 +212,7 @@ namespace MapPointer {
 
     /**
      * The pinchType is inferred from mapNavigation options.
-     * @private
+     * @internal
      */
     function wrapZoomOption(
         this: Pointer,
@@ -219,7 +223,7 @@ namespace MapPointer {
         // Pinch status
         if (
             mapNavigation &&
-            pick(mapNavigation.enableTouchZoom, mapNavigation.enabled)
+            (mapNavigation.enableTouchZoom ?? mapNavigation.enabled)
         ) {
             this.chart.zooming.pinchType = 'xy';
         }
@@ -235,4 +239,5 @@ namespace MapPointer {
  *
  * */
 
+/** @internal */
 export default MapPointer;

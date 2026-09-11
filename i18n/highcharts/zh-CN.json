@@ -154,11 +154,16 @@
             "timeRangeMinutes": "数据范围：{range} 分钟。",
             "timeRangeSeconds": "数据范围：{range} 秒。",
             "rangeFromTo": "数据范围从 {rangeFrom} 到 {rangeTo}。",
-            "rangeCategories": "数据范围：{numCategories} 个类别。"
+            "rangeCategories": "数据范围：{numCategories} 个类别。",
+            "defaultAxisNames": {
+                "categories": "类别",
+                "time": "时间",
+                "values": "值"
+            }
         },
         "exporting": {
             "chartMenuLabel": "图表菜单",
-            "menuButtonLabel": "查看图表菜单, {chartTitle}"
+            "menuButtonLabel": "查看图表上下文菜单, {chartTitle}"
         },
         "series": {
             "summary": {

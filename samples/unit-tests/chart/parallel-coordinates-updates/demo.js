@@ -242,4 +242,42 @@ QUnit.test('Update parallel coordinates plot', function (assert) {
         'The third yAxis\' max should be equal to the third point\'s high ' +
         'value.'
     );
+
+    const pathArray = chart.yAxis[0].ticks['8'].gridLine.pathArray;
+
+    assert.ok(
+        pathArray[0][1] !== pathArray[1][1],
+        'Parallel yAxis grid line path should have non-zero length, #24442.'
+    );
+
+});
+
+// Update unassigned points from y-axes (#13608)
+QUnit.test('#13608', function (assert) {
+    var chart = Highcharts.chart('container', {
+        chart: {
+            parallelCoordinates: true
+        },
+        series: [
+            {
+                data: [1, 2, 3]
+            }
+        ]
+    });
+
+    var oldMax = chart.yAxis.map(function (yAxis) {
+        return yAxis.max;
+    });
+
+    chart.update({
+        chart: {
+            parallelCoordinates: true
+        }
+    });
+
+    var newMax = chart.yAxis.map(function (yAxis) {
+        return yAxis.max;
+    });
+
+    assert.deepEqual(newMax, oldMax, 'Points should be kept on axes.');
 });

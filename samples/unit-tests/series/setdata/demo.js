@@ -549,6 +549,30 @@ QUnit.test('Series.setData with updatePoints', function (assert) {
         'Setting data on a updated series with cropped dataset should keep ' +
         'correct x-values (#12696).'
     );
+
+    chart.update({
+        xAxis: {
+            min: undefined
+        }
+    });
+    assert.deepEqual(
+        chart.series[0].data.map(p => p.y),
+        [2, 1, 2, 1, 2, 1],
+        'Initial y values'
+    );
+    chart.series[0].setData([
+        [0, 2],
+        [2, 1],
+        [4, null],
+        [6, 1],
+        [8, 2],
+        [10, 1]
+    ]);
+    assert.deepEqual(
+        chart.series[0].data.map(p => p.y),
+        [2, 1, null, 1, 2, 1],
+        'Null y-value should be applied (#24872)'
+    );
 });
 
 QUnit.test('Boosted series with updatePoints', function (assert) {
@@ -700,11 +724,26 @@ QUnit.test(
             'Original data array should not be modified after initial render.'
         );
 
+        chart.series[0].points[0].watermark = 'I survived setData 💪';
+        chart.series[0].points[0].graphic.watermark = 'I survived setData 💪';
+
         chart.series[0].setData(newData);
         assert.deepEqual(
             oriData,
             referenceArray,
             'The setData should not mutate the original data array.'
+        );
+
+        assert.strictEqual(
+            chart.series[0].points[0].watermark,
+            'I survived setData 💪',
+            'The point instance should be the same after setData (#24225).'
+        );
+
+        assert.strictEqual(
+            chart.series[0].points[0].graphic.watermark,
+            'I survived setData 💪',
+            'The graphic instance should be the same after setData (#24225).'
         );
 
         chart.series[0].points[0].remove();

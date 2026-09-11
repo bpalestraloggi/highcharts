@@ -1,5 +1,6 @@
 name: Highcharts Visual Comparison
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - 'master'
@@ -20,18 +21,18 @@ jobs:
   file_size_comparison:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: master
 
       - name: Use Node.js lts/*
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Check TypeScript version
         run: npx tsc -v
@@ -39,26 +40,29 @@ jobs:
       - name: Build Highcharts
         run: npx gulp scripts
 
+      - name: Build Grid
+        run: npx gulp scripts --product Grid
+
       - name: Build Dashboards
-        run: npx gulp dashboards/scripts
+        run: npx gulp scripts --product Dashboards
 
       - name: Write file sizes at master
         run: npx gulp write-file-sizes --filename master.json
 
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           clean: false
           fetch-depth: 0
 
       - name: Use Node.js lts/*
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 'lts/*'
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Check TypeScript version
         run: npx tsc -v
@@ -66,19 +70,58 @@ jobs:
       - name: Build Highcharts
         run: npx gulp scripts
 
+      - name: Build Grid
+        run: npx gulp scripts --product Grid
+
       - name: Build Dashboards
-        run: npx gulp dashboards/scripts
+        run: npx gulp scripts --product Dashboards
 
       - name: File size comparison
         run: |
           npx gulp write-file-sizes --filename ${{github.event.pull_request.number}}.json
-          npx gulp compare-size-and-comment \
+          npx gulp write-size-table \
           --master ./tmp/filesizes/master.json \
-          --proposed ./tmp/filesizes/${{github.event.pull_request.number}}.json \
-          --pr ${{github.event.pull_request.number}} \
-          --user highsoft-bot
-        env:
-          GITHUB_TOKEN: ${{secrets.PR_COMMENT_TOKEN}}
+          --proposed ./tmp/filesizes/${{github.event.pull_request.number}}.json
+
+      - name: Comment PR with file size table
+        if: ${{ github.event.pull_request.number && hashFiles('tmp/filesizes/comparison.md') != '' }}
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{secrets.PR_COMMENT_TOKEN}}
+          script: |
+            const { readFileSync } = require('node:fs');
+            const { createOrUpdateComment } = require('./.github/scripts/commentOnPR');
+
+            const comparisonPath = './tmp/filesizes/comparison.md';
+            const title = 'File size comparison';
+
+            let body = readFileSync(comparisonPath, 'utf8');
+            body = body.replace(/^### File size comparison\s*/i, '').trim();
+
+            if (!body) {
+              body = 'No differences found';
+            }
+
+            if (!body.startsWith('\n')) {
+              body = `\n${body}`;
+            }
+
+            await createOrUpdateComment(
+              github,
+              context,
+              title,
+              body
+            );
+
+      - name: Upload file size comparison artifact
+        if: ${{ always() && hashFiles('tmp/filesizes/comparison.md') != '' }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: filesize-comparison-${{ github.event.pull_request.number || github.run_id }}
+          path: |
+            tmp/filesizes/master.json
+            tmp/filesizes/${{ github.event.pull_request.number }}.json
+            tmp/filesizes/comparison.md
 
 
   visual_compare:
@@ -88,114 +131,141 @@ jobs:
       matrix:
         node-version: [lts/*]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: master
 
+      - name: Use Firefox 153.0.4
+        id: reference-firefox
+        uses: browser-actions/setup-firefox@v1
+        with:
+          firefox-version: '153.0.4'
+
+      - name: Disable Firefox updates
+        env:
+          FIREFOX_PATH: ${{ steps.reference-firefox.outputs.firefox-path }}
+        run: node .github/scripts/disableFirefoxUpdates.js
+
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Build Highcharts
         run: npx gulp scripts
 
-      - run: npx karma start test/karma-conf.js --tests highcharts/*/* --reference --browsercount 2 --no-fail-on-empty-test-suite
-      - run: npx karma start test/karma-conf.js --tests maps/*/* --reference --browsercount 2 --no-fail-on-empty-test-suite
-      - run: npx karma start test/karma-conf.js --tests stock/*/* --reference --browsercount 2 --no-fail-on-empty-test-suite
-      - run: npx karma start test/karma-conf.js --tests gantt/*/* --reference --browsercount 2 --no-fail-on-empty-test-suite
+      - run: npx karma start test/karma-conf.js --tests highcharts/*/* --ts --reference --browsercount 2 --no-fail-on-empty-test-suite
+      - run: npx karma start test/karma-conf.js --tests maps/*/* --ts --reference --browsercount 2 --no-fail-on-empty-test-suite
+      - run: npx karma start test/karma-conf.js --tests stock/*/* --ts --reference --browsercount 2 --no-fail-on-empty-test-suite
+      - run: npx karma start test/karma-conf.js --tests gantt/*/* --ts --reference --browsercount 2 --no-fail-on-empty-test-suite
 
       - name: Checkout current branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           clean: false
           fetch-depth: 0
 
+      - name: Use Firefox 153.0.4
+        id: candidate-firefox
+        uses: browser-actions/setup-firefox@v1
+        with:
+          firefox-version: '153.0.4'
+
+      - name: Disable Firefox updates
+        env:
+          FIREFOX_PATH: ${{ steps.candidate-firefox.outputs.firefox-path }}
+        run: node .github/scripts/disableFirefoxUpdates.js
+
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm i
+        run: npm ci
 
       - name: Build Highcharts
         run: npx gulp scripts
 
-      - run: npx karma start test/karma-conf.js --tests highcharts/*/* --single-run --browsercount 2 --visualcompare || true
-      - run: npx karma start test/karma-conf.js --tests stock/*/* --single-run --browsercount 2 --visualcompare || true
-      - run: npx karma start test/karma-conf.js --tests maps/*/* --single-run --browsercount 2 --visualcompare || true
-      - run: npx karma start test/karma-conf.js --tests gantt/*/* --single-run --browsercount 2 --visualcompare || true
+      - name: Compare Highcharts visual tests
+        run: node .github/scripts/runVisualCompare.js "Highcharts" "highcharts/*/*"
 
-      - name: Comment on PR and upload visual test result
+      - name: Compare Stock visual tests
+        run: node .github/scripts/runVisualCompare.js "Stock" "stock/*/*"
+
+      - name: Compare Maps visual tests
+        run: node .github/scripts/runVisualCompare.js "Maps" "maps/*/*"
+
+      - name: Compare Gantt visual tests
+        run: node .github/scripts/runVisualCompare.js "Gantt" "gantt/*/*"
+
+      - name: Generate visual test report
         run: |
           npx gulp update-pr-testresults \
-          --fail-silently \
-          --pr ${{github.event.pull_request.number}}
+          --pr ${{github.event.pull_request.number}} \
+          --fail-silently
         if: ${{ always() }}
         env:
-          GITHUB_TOKEN: ${{secrets.PR_COMMENT_TOKEN}}
-          HIGHCHARTS_VISUAL_TESTS_BUCKET: ${{secrets.VISUAL_TESTS_S3_BUCKET}}
-          AWS_ACCESS_KEY_ID: ${{secrets.VISUAL_TESTS_AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.VISUAL_TESTS_AWS_SECRET_ACCESS_KEY}}
-          AWS_REGION: ${{secrets.VISUAL_TESTS_AWS_REGION}}
-
-      - name: Purge references with no candidate
-        if: ${{ always() }}
-        run: |
-          find ./samples -type f -name "reference.svg" \
-            -exec sh -c '
-              for f do
-                dir="$(dirname "$f")"
-                candidate_path="$dir/candidate.svg"
-                if [ ! -f "$candidate_path" ]; then
-                  echo "Deleting unpaired reference: $f"
-                  rm "$f"
-                fi
-              done
-            ' sh {} +
-
-      - name: Upload visual test images
-        if: ${{ always() }}
-        run: |
-          aws s3 sync ./samples \
-          "s3://$HIGHCHARTS_VISUAL_TESTS_BUCKET/visualtests/diffs/pullrequests/$PR_NUMBER/" \
-          --exclude "*" \
-          --include "*/reference.svg" \
-          --include "*/candidate.svg" \
-          --include "*/diff.gif"
-        env:
-          HIGHCHARTS_VISUAL_TESTS_BUCKET: ${{secrets.VISUAL_TESTS_S3_BUCKET}}
-          AWS_ACCESS_KEY_ID: ${{secrets.VISUAL_TESTS_AWS_ACCESS_KEY_ID}}
-          AWS_SECRET_ACCESS_KEY: ${{secrets.VISUAL_TESTS_AWS_SECRET_ACCESS_KEY}}
-          AWS_REGION: ${{secrets.VISUAL_TESTS_AWS_REGION}}
-          PR_NUMBER: ${{github.event.pull_request.number}}
+          VISUAL_REVIEW_API_KEY: ${{secrets.VISUAL_REVIEW_INGESTION_API_KEY}}
+          VISUAL_REVIEW_PR_SHA: ${{github.event.pull_request.head.sha}}
 
       - name: Comment on PR
-        uses: actions/github-script@v7
-        if: ${{ always() }}
+        uses: actions/github-script@v8
+        if: ${{ always() && hashFiles('tmp/pr-visual-test-comment.json') != '' }}
         with:
           github-token: ${{secrets.PR_COMMENT_TOKEN}}
           script: |
             const { createOrUpdateComment } = require('./.github/scripts/commentOnPR');
-            const { readFileSync } = require('node:fs')
-            const { title, body } = require('./tmp/pr-visual-test-comment.json');
+            const { existsSync, readFileSync } = require('node:fs');
 
-            await createOrUpdateComment(github, context, title, body);
+            const commentPath = './tmp/pr-visual-test-comment.json';
+
+            if (!existsSync(commentPath)) {
+              core.warning(`Skipping PR comment because ${commentPath} is missing.`);
+              return;
+            }
+
+            let parsed;
+            try {
+              parsed = JSON.parse(readFileSync(commentPath, 'utf8'));
+            } catch (error) {
+              core.warning(`Skipping PR comment because ${commentPath} could not be parsed: ${error.message}`);
+              return;
+            }
+
+            const { title = 'Visual test results', body = '' } = parsed;
+
+            const normalizedBody = body.startsWith('\n') ? body : `\n${body}`;
+
+            await createOrUpdateComment(
+              github,
+              context,
+              title,
+              normalizedBody
+            );
 
 
       - name: Store artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: ${{ always() }}
         with:
           name: visual-test-results
           path: |
             test/visual-test-results.json
-            test/review-pr-*.json
+            test/visual-test-errors.log
             tmp/pr-visual-test-comment.json
 
+      - name: Fail on visual test execution errors
+        if: ${{ always() }}
+        run: |
+          error_file=test/visual-test-errors.log
+          if [ -s "$error_file" ]; then
+            echo "Visual test execution errors:"
+            cat "$error_file"
+            exit 1
+          fi

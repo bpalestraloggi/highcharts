@@ -2,11 +2,13 @@
  *
  *  Organization chart module
  *
- *  (c) 2018-2025 Torstein Honsi
+ *  (c) 2018-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -27,12 +29,7 @@ import SeriesRegistry from '../../Core/Series/SeriesRegistry.js';
 const {
     sankey: { prototype: { pointClass: SankeyPointClass } }
 } = SeriesRegistry.seriesTypes;
-import U from '../../Core/Utilities.js';
-const {
-    defined,
-    find,
-    pick
-} = U;
+import { defined, find } from '../../Shared/Utilities.js';
 
 /* *
  *
@@ -147,10 +144,8 @@ class OrganizationPoint extends SankeyPointClass {
 
             // Default all children of the hanging node
             // to have hanging layout
-            (node.options as any).layout = pick(
-                (node.options as any).layout,
-                'hanging'
-            );
+            (node.options as any).layout =
+                (node.options as any).layout ?? 'hanging';
             node.hangsFrom = fromNode;
 
             find(

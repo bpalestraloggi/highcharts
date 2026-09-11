@@ -1,12 +1,13 @@
 /* *
  *
- *  (c) 2014-2025 Highsoft AS
+ *  (c) 2014-2026 Highsoft AS
  *
- *  Authors: Jon Arild Nygard / Oystein Moseng
+ *  Authors: Jon Arild Nygård / Øystein Moseng
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -26,16 +27,14 @@ import type CoreSeries from '../Core/Series/Series';
 import type ColorType from '../Core/Color/ColorType';
 
 import Color from '../Core/Color/Color.js';
-import U from '../Core/Utilities.js';
-const {
+import {
     extend,
     isArray,
     isNumber,
     isObject,
     merge,
-    pick,
     relativeLength
-} = U;
+} from '../Shared/Utilities.js';
 
 /* *
  *
@@ -43,7 +42,6 @@ const {
  *
  * */
 
-/* eslint-disable valid-jsdoc */
 
 /**
  * @private
@@ -105,20 +103,20 @@ function getColor(
 
         // Select either point color, level color or inherited color.
         if (!series.chart.styledMode) {
-            color = pick(
-                point && point.options.color,
-                level && level.color,
-                colorByPoint,
-                parentColor && variateColor(parentColor),
+            color = (
+                (point && point.options.color) ??
+                (level && level.color) ??
+                colorByPoint ??
+                (parentColor && variateColor(parentColor)) ??
                 series.color
             );
         }
 
-        colorIndex = pick(
-            point && point.options.colorIndex,
-            level && level.colorIndex,
-            colorIndexByPoint,
-            parentColorIndex,
+        colorIndex = (
+            (point && point.options.colorIndex) ??
+            (level && level.colorIndex) ??
+            colorIndexByPoint ??
+            parentColorIndex ??
             options.colorIndex
         );
     }
@@ -169,10 +167,8 @@ function getLevelOptions<T extends TreeUtilities.Series>(
 
                 if (isObject(item) && isNumber(item.level)) {
                     options = merge({}, item);
-                    levelIsConstant = pick(
-                        options.levelIsConstant,
-                        defaults.levelIsConstant
-                    );
+                    levelIsConstant =
+                        options.levelIsConstant ?? defaults.levelIsConstant;
                     // Delete redundant properties.
                     delete options.levelIsConstant;
                     delete options.level;
@@ -221,7 +217,7 @@ function setTreeValues<T extends TreeUtilities.Series>(
     let childrenTotal = 0;
 
     tree.levelDynamic = tree.level - (levelIsConstant ? 0 : nodeRoot.level);
-    tree.name = pick(point && point.name, '');
+    tree.name = ((point && point.name) ?? '');
     tree.visible = (
         idRoot === tree.id ||
         options.visible === true
@@ -248,7 +244,7 @@ function setTreeValues<T extends TreeUtilities.Series>(
         }
     });
     // Set the values
-    const value = pick(optionsPoint.value, childrenTotal);
+    const value = (optionsPoint.value ?? childrenTotal);
     tree.visible = value >= 0 && (childrenTotal > 0 || tree.visible);
     tree.children = children;
     tree.childrenTotal = childrenTotal;
@@ -281,7 +277,7 @@ function updateRootId(
         options = isObject(series.options) ? series.options : {};
 
         // Calculate the rootId.
-        rootId = pick(series.rootNode, options.rootId, '');
+        rootId = (series.rootNode ?? options.rootId ?? '');
 
         // Set rootId on series.userOptions to pick it up in exporting.
         if (isObject(series.userOptions)) {

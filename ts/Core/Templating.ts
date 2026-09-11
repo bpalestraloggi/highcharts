@@ -1,10 +1,12 @@
 /* *
  *
- *  (c) 2010-2025 Torstein Honsi
+ *  (c) 2010-2026 Highsoft AS
+ *  Author: Torstein Hønsi
  *
- *  License: www.highcharts.com/license
+ *  Integration of this software requires a license.
+ *  - For commercial use, see www.highcharts.com/license
+ *  - For non-commercial, see www.highcharts.com/license-eula
  *
- *  !!!!!!! SOURCE GETS TRANSPILED BY TYPESCRIPT. EDIT TS FILE ONLY. !!!!!!!
  *
  * */
 
@@ -28,18 +30,18 @@ import G from './Globals.js';
 const {
     pageLang
 } = G;
-import U from './Utilities.js';
-const {
+import {
+    correctFloat,
     extend,
     getNestedProperty,
     isArray,
     isNumber,
     isObject,
     isString,
-    pick,
     ucfirst
-} = U;
+} from '../Shared/Utilities.js';
 
+/** @internal */
 interface MatchObject {
     body?: string;
     ctx: any;
@@ -53,13 +55,15 @@ interface MatchObject {
     startInner: number;
 }
 
+/** @internal */
 const helpers: Record<string, Function> = {
     // Built-in helpers
     add: (a: number, b: number): number => a + b,
-    divide: (a: number, b: number): number|string => (b !== 0 ? a / b : ''),
+    divide: (a: number, b: number): number | string =>
+        (b !== 0 ? correctFloat(a / b) : ''),
     // eslint-disable-next-line eqeqeq
     eq: (a: unknown, b: unknown): boolean => a == b,
-    each: function (arr: string[]|object[]|undefined): string|false {
+    each: function (arr: string[] | object[] | undefined): string | false {
         const match = arguments[arguments.length - 1];
         return isArray(arr) ?
             arr.map((item, i): string => format(match.body, extend(
@@ -73,15 +77,15 @@ const helpers: Record<string, Function> = {
     },
     ge: (a: number, b: number): boolean => a >= b,
     gt: (a: number, b: number): boolean => a > b,
-    'if': (condition: string[]|undefined): boolean => !!condition,
+    'if': (condition: string[] | undefined): boolean => !!condition,
     le: (a: number, b: number): boolean => a <= b,
     lt: (a: number, b: number): boolean => a < b,
-    multiply: (a: number, b: number): number => a * b,
+    multiply: (a: number, b: number): number => correctFloat(a * b, 15),
     // eslint-disable-next-line eqeqeq
     ne: (a: unknown, b: unknown): boolean => a != b,
     subtract: (a: number, b: number): number => a - b,
     ucfirst,
-    unless: (condition: string[]|undefined): boolean => !condition
+    unless: (condition: string[] | undefined): boolean => !condition
 };
 
 const numberFormatCache: Record<string, Intl.NumberFormat> = {};
@@ -92,7 +96,10 @@ const numberFormatCache: Record<string, Intl.NumberFormat> = {};
  *
  * */
 
-// Internal convenience function
+/**
+ * Internal convenience function.
+ * @internal
+ */
 const isQuotedString = (str: string): boolean => /^["'].+["']$/.test(str);
 
 /**
@@ -171,7 +178,7 @@ function dateFormat(
  *        replaced by its value.
  *
  * @param {Highcharts.Chart} [owner]
- *        A `Chart` or `DataGrid` instance used to get numberFormatter and time.
+ *        A `Chart` or `Grid` instance used to get numberFormatter and time.
  *
  * @return {string}
  *         The formatted string.
@@ -182,12 +189,11 @@ function format(
     owner?: Templating.Owner
 ): string {
 
-    // Notice: using u flag will require a refactor for ES5 (#22450).
-    const regex = /\{([a-zA-Z\u00C0-\u017F\d:\.,;\-\/<>\[\]%_@+"'’= #\(\)]+)\}/g, // eslint-disable-line max-len
+    const regex = /\{([^{}]+)\}/g,
         // The sub expression regex is the same as the top expression regex,
         // but except parens and block helpers (#), and surrounded by parens
         // instead of curly brackets.
-        subRegex = /\(([a-zA-Z\u00C0-\u017F\d:\.,;\-\/<>\[\]%_@+"'= ]+)\)/g,
+        subRegex = /\(([^()]+)\)/g,
         matches = [],
         floatRegex = /f$/,
         decRegex = /\.(\d)/,
@@ -221,10 +227,10 @@ function format(
         return getNestedProperty(key, ctx);
     };
 
-    let match: RegExpExecArray|null,
-        currentMatch: MatchObject|undefined,
+    let match: RegExpExecArray | null,
+        currentMatch: MatchObject | undefined,
         depth = 0,
-        hasSub: boolean|undefined;
+        hasSub: boolean | undefined;
 
     // Parse and create tree
     while ((match = regex.exec(str)) !== null) {
@@ -286,7 +292,7 @@ function format(
                     currentMatch.body = body;
                     currentMatch.startInner = match.index + match[0].length;
 
-                // The body exists already, so this is the else section
+                    // The body exists already, so this is the else section
                 } else {
                     currentMatch.elseBody = body;
                 }
@@ -300,7 +306,7 @@ function format(
                 depth--;
             }
 
-        // Common expression
+            // Common expression
         } else if (!currentMatch.isBlock) {
             matches.push(currentMatch);
         }
@@ -334,7 +340,7 @@ function format(
                 if (!startChar && (char === '"' || char === '\'')) {
                     startChar = char;
 
-                // End of string
+                    // End of string
                 } else if (startChar === char) {
                     startChar = '';
                 }
@@ -364,7 +370,7 @@ function format(
             }
 
 
-        // Simple variable replacement
+            // Simple variable replacement
         } else {
             const valueAndFormat = isQuotedString(expression) ?
                 [expression] : expression.split(':');
@@ -372,15 +378,10 @@ function format(
             replacement = resolveProperty(valueAndFormat.shift() || '');
 
             // Format the replacement
-            const isFloat = replacement % 1 !== 0;
-            if (
-                typeof replacement === 'number' &&
-                (valueAndFormat.length || isFloat)
-            ) {
-
+            if (valueAndFormat.length && typeof replacement === 'number') {
                 const segment = valueAndFormat.join(':');
 
-                if (floatRegex.test(segment) || isFloat) { // Float
+                if (floatRegex.test(segment)) { // Float
                     const decimals = parseInt(
                         (segment.match(decRegex) || ['', '-1'])[1],
                         10
@@ -405,7 +406,7 @@ function format(
                 replacement = `"${replacement}"`;
             }
         }
-        str = str.replace(match.find, pick(replacement, ''));
+        str = str.replace(match.find, (replacement ?? ''));
     });
     return hasSub ? format(str, ctx, owner) : str;
 }
@@ -437,7 +438,7 @@ function format(
  *         The formatted number.
  */
 function numberFormat(
-    this: Templating.Owner|void,
+    this: Templating.Owner | void,
     number: number,
     decimals: number,
     decimalPoint?: string,
@@ -548,16 +549,32 @@ const Templating = {
 
 namespace Templating {
     export interface FormatterCallback<T> {
-        (this: T): string;
+        (this: T, ...args: Array<any>): string;
     }
     export interface OwnerOptions {
+        /**
+         * Language options. See {@link Highcharts.LangOptions} for details.
+         */
         lang?: LangOptionsCore;
     }
     export interface Owner {
+        /**
+         * The chart options. See {@link Highcharts.Options} for details.
+         */
         options?: OwnerOptions;
+        /**
+         * The time object. See {@link Highcharts.Time} for details.
+         */
         time?: TimeBase;
+        /**
+         * A function to format numbers. See {@link Highcharts.numberFormat} for
+         * details.
+         */
         numberFormatter?: Function;
-        locale?: string | string[]
+        /**
+         * The locale to use for number formatting.
+         */
+        locale?: string | string[];
     }
 }
 
@@ -568,9 +585,7 @@ export default Templating;
  * */
 
 /**
- * @interface Highcharts.Templating
- *
- * The Highcharts.Templating interface provides a structure for defining
+ * The Highcharts.TemplatingObject interface provides a structure for defining
  * helpers. Helpers can be used as conditional blocks or functions within
  * expressions. Highcharts includes several built-in helpers and supports
  * the addition of custom helpers.
@@ -578,6 +593,8 @@ export default Templating;
  * @see [More information](
  * https://www.highcharts.com/docs/chart-concepts/templating#helpers)
  *
+ * @interface Highcharts.TemplatingObject
+ *//**
  * @example
  * // Define a custom helper to return the absolute value of a number
  * Highcharts.Templating.helpers.abs = value => Math.abs(value);
@@ -585,8 +602,11 @@ export default Templating;
  * // Usage in a format string
  * format: 'Absolute value: {abs point.y}'
  *
- * @name Highcharts.Templating#helpers
+ * @name Highcharts.TemplatingObject#helpers
  * @type {Record<string, Function>}
+ *//**
+ * @name Highcharts.Templating
+ * @type {Highcharts.TemplatingObject}
  */
 
 (''); // Keeps doclets above in file
